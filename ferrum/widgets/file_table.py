@@ -43,6 +43,9 @@ class FileTable(Widget):
         self.date_format = date_format
         self._entries: list[FileEntry] = []
         self._selected: set[int] = set()
+        self._sort_column: str = "Name"
+        self._sort_reverse: bool = False
+        self._all_entries: list = []  # unfiltered, unsorted master list
         self._last_click_row: int | None = None
 
     def compose(self) -> ComposeResult:
@@ -51,8 +54,19 @@ class FileTable(Widget):
         yield table
 
     def populate(self, entries: list[FileEntry], show_hidden: bool = False) -> None:
+        self._all_entries = entries
+        self._show_hidden = show_hidden
+        self._apply_sort()
+
+    def _apply_sort(self) -> None:
         table = self.query_one(DataTable)
-        table.clear()
+        table.clear(columns=True)
+        # Rebuild columns with sort indicator on active column
+        for name in ("Name", "Size", "Modified"):
+            if name == self._sort_column:
+                table.add_column(f"{name} {'▼' if self._sort_reverse else '▲'}", key=name)
+            else:
+                table.add_column(name, key=name)
         self._entries = []
         self._selected = set()
         try:
@@ -61,11 +75,50 @@ class FileTable(Widget):
             footer.update_selection(0, 0)
         except Exception:
             pass
-        for entry in entries:
-            if not show_hidden and entry.is_hidden:
-                continue
+
+        show_hidden = getattr(self, "_show_hidden", False)
+        visible = [e for e in self._all_entries if show_hidden or not e.is_hidden]
+
+        # Always sort dirs first, then apply column sort
+        col = self._sort_column
+        rev = self._sort_reverse
+        if col == "Name":
+            key_fn = lambda e: (not e.is_dir, e.name.lower())
+        elif col == "Size":
+            key_fn = lambda e: (not e.is_dir, e.size or 0)
+        elif col == "Modified":
+            key_fn = lambda e: (not e.is_dir, e.modified or 0)
+        else:
+            key_fn = lambda e: (not e.is_dir, e.name.lower())
+
+        # Reverse only the within-group sort, not the dirs-first ordering
+        dirs = sorted([e for e in visible if e.is_dir], key=lambda e: e.name.lower() if col == "Name" else (e.size or 0) if col == "Size" else (e.modified or 0), reverse=rev)
+        files = sorted([e for e in visible if not e.is_dir], key=lambda e: e.name.lower() if col == "Name" else (e.size or 0) if col == "Size" else (e.modified or 0), reverse=rev)
+        sorted_entries = dirs + files
+
+        for entry in sorted_entries:
             self._entries.append(entry)
             self._add_row(len(self._entries) - 1)
+
+    @on(DataTable.HeaderSelected)
+    def on_header_selected(self, event: DataTable.HeaderSelected) -> None:
+        """Sort by clicked column header."""
+        # Strip any existing sort indicator to get the base column name
+        col_label = str(event.label).strip().rstrip("▲▼").strip()
+        if self._sort_column == col_label:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_column = col_label
+            self._sort_reverse = False
+        self._apply_sort()
+        # Update column headers to show sort indicator
+        table = self.query_one(DataTable)
+        for col in table.columns.values():
+            label = str(col.label).strip().rstrip("▲▼").strip()
+            if label == col_label:
+                col.label = f"{label} {'▼' if self._sort_reverse else '▲'}"
+            else:
+                col.label = label
 
     def _add_row(self, idx: int) -> None:
         table = self.query_one(DataTable)
