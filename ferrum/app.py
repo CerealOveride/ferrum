@@ -148,6 +148,7 @@ class FerrumApp(App):
     def action_toggle_sidebar(self) -> None:
         self.query_one(Sidebar).toggle()
 
+
     def action_new_tab(self) -> None:
         self.query_one(FilePane).new_tab()
 
