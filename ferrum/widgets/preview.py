@@ -110,7 +110,25 @@ class PreviewPane(Widget):
         title = self.query_one("#preview-title", Static)
         content = self.query_one("#preview-content", Static)
 
+        from ferrum.backends.router import is_smb_path
         title.update(p.name or path)
+
+        if is_smb_path(path):
+            # For SMB paths, determine type from extension/name
+            # since we can't use pathlib exists/is_dir on smb paths
+            from pathlib import PurePosixPath
+            pure = PurePosixPath(path)
+            suffix = pure.suffix.lower()
+            # If no extension, assume directory
+            if not suffix:
+                await self._preview_smb_metadata(path, content)
+            elif suffix in IMAGE_EXTENSIONS:
+                await self._preview_image(p, content)
+            elif suffix in TEXT_EXTENSIONS:
+                await self._preview_text(p, content)
+            else:
+                await self._preview_smb_metadata(path, content)
+            return
 
         if not p.exists():
             content.update("[red]Path does not exist[/red]")
@@ -150,6 +168,12 @@ class PreviewPane(Widget):
     async def _preview_text(self, p: Path, content: Static) -> None:
         """Preview text file with syntax highlighting."""
         try:
+            path_str = str(p)
+            from ferrum.backends.router import is_smb_path
+            if is_smb_path(path_str):
+                await self._preview_text_smb(path_str, content)
+                return
+
             size = p.stat().st_size
             if size > MAX_TEXT_SIZE:
                 content.update(f"[yellow]File too large to preview\n({size // 1024}KB)[/yellow]")
@@ -164,7 +188,6 @@ class PreviewPane(Widget):
 
             code = "".join(lines)
             language = detect_language(str(p))
-
             syntax = Syntax(
                 code,
                 language,
@@ -176,6 +199,62 @@ class PreviewPane(Widget):
 
         except (OSError, UnicodeDecodeError) as e:
             content.update(f"[red]Cannot read file:\n{e}[/red]")
+
+    async def _preview_text_smb(self, path: str, content: Static) -> None:
+        """Preview a text file from an SMB share."""
+        import asyncio
+        import smbclient
+        from ferrum.backends.smb import parse_smb_url, smb_path
+        from ferrum.backends.router import _find_username_for_host, KEYRING_SERVICE
+        import keyring
+
+        def _read():
+            host, share, remaining = parse_smb_url(path)
+            unc = smb_path(host, share, remaining)
+
+            # Ensure we have a session
+            username = _find_username_for_host(host)
+            password = None
+            if username:
+                password = keyring.get_password(KEYRING_SERVICE, f"{username}@{host}")
+            try:
+                kwargs = {}
+                if username:
+                    kwargs["username"] = username
+                if password:
+                    kwargs["password"] = password
+                smbclient.register_session(host, **kwargs)
+            except Exception:
+                pass
+
+            stat = smbclient.stat(unc)
+            if stat.st_size > MAX_TEXT_SIZE:
+                return None, stat.st_size
+
+            lines = []
+            with smbclient.open_file(unc, mode="r", encoding="utf-8", errors="replace") as f:
+                for i, line in enumerate(f):
+                    if i >= PREVIEW_LINES:
+                        break
+                    lines.append(line)
+            return "".join(lines), stat.st_size
+
+        try:
+            code, size = await asyncio.get_event_loop().run_in_executor(None, _read)
+            if code is None:
+                content.update(f"[yellow]File too large to preview\n({size // 1024}KB)[/yellow]")
+                return
+            language = detect_language(path)
+            syntax = Syntax(
+                code,
+                language,
+                theme="monokai",
+                line_numbers=True,
+                word_wrap=False,
+            )
+            content.update(syntax)
+        except Exception as e:
+            content.update(f"[red]Cannot read SMB file:\n{e}[/red]")
 
     async def _preview_image(self, p: Path, content: Static) -> None:
         """Preview image using Kitty graphics protocol if available."""
@@ -203,6 +282,59 @@ class PreviewPane(Widget):
                 content.update(f"[red]Cannot read image:\n{e}[/red]")
         else:
             await self._preview_metadata(p, content)
+
+    async def _preview_smb_metadata(self, path: str, content: Static) -> None:
+        """Show metadata for an SMB file or directory."""
+        import asyncio
+        import smbclient
+        from ferrum.backends.smb import parse_smb_url, smb_path
+        from ferrum.backends.router import _find_username_for_host, KEYRING_SERVICE
+        import keyring
+        import datetime
+
+        def _stat():
+            host, share, remaining = parse_smb_url(path)
+            unc = smb_path(host, share, remaining)
+            username = _find_username_for_host(host)
+            password = None
+            if username:
+                password = keyring.get_password(KEYRING_SERVICE, f"{username}@{host}")
+            try:
+                kwargs = {}
+                if username:
+                    kwargs["username"] = username
+                if password:
+                    kwargs["password"] = password
+                smbclient.register_session(host, **kwargs)
+            except Exception:
+                pass
+            is_dir = smbclient.path.isdir(unc)
+            stat = smbclient.stat(unc)
+            return is_dir, stat
+
+        try:
+            is_dir, stat = await asyncio.get_event_loop().run_in_executor(None, _stat)
+            size = stat.st_size
+            modified = datetime.datetime.fromtimestamp(stat.st_mtime)
+
+            for unit in ["B", "KB", "MB", "GB"]:
+                if size < 1024:
+                    size_str = f"{size:.1f} {unit}"
+                    break
+                size /= 1024
+            else:
+                size_str = f"{size:.1f} TB"
+
+            text = Text()
+            if is_dir:
+                text.append("📁 SMB Directory\n\n", style="bold yellow")
+            else:
+                text.append("📄 SMB File\n\n", style="bold")
+            text.append(f"Size:\n  {size_str}\n\n", style="cyan")
+            text.append(f"Modified:\n  {modified.strftime('%Y-%m-%d %H:%M')}\n", style="cyan")
+            content.update(text)
+        except Exception as e:
+            content.update(f"[red]Cannot stat SMB path:\n{e}[/red]")
 
     async def _preview_metadata(self, p: Path, content: Static) -> None:
         """Show file metadata for unknown file types."""
