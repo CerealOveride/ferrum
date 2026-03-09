@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: ferrum
+Version: 0.1.0
+Summary: A fast, stable, DE-agnostic TUI file manager
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: textual>=0.47.0
+Requires-Dist: aiofiles>=23.0.0
+Requires-Dist: smbprotocol>=1.12.0
+Requires-Dist: send2trash>=2.1.0
+Requires-Dist: keyring>=25.7.0
+Requires-Dist: keyrings.alt>=5.0.2
+
 # Ferrum
 
 A fast, stable, DE-agnostic TUI file manager built with Python and Textual.

@@ -1,0 +1,28 @@
+Format: 1.8
+Date: Mon, 09 Mar 2026 13:56:15 -0700
+Source: ferrum
+Architecture: source
+Version: 0.1.0-1
+Distribution: bookworm
+Urgency: low
+Maintainer: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
+Changed-By: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
+Changes:
+ ferrum (0.1.0-1) bookworm; urgency=low
+ .
+   * source package automatically created by stdeb 0.10.0
+Checksums-Sha1:
+ ec1642b44917c0cbb349b2847ae711417d5f2d0b 864 ferrum_0.1.0-1.dsc
+ cbd0c484e73a097999a8a2283558b2f95167ff1d 21109 ferrum_0.1.0.orig.tar.gz
+ 26140e30aee7ab7bed22ac30500519ebad327e23 1212 ferrum_0.1.0-1.debian.tar.xz
+ b400ea7b2ddc8aaeb0a575357f759c5bd5590c20 5376 ferrum_0.1.0-1_source.buildinfo
+Checksums-Sha256:
+ d0b316c23e12854a99902ec41b9cfdb5f3c79f23eec8b796c1304034038b5eea 864 ferrum_0.1.0-1.dsc
+ 2a4c39ee6e0472db4a8add643fc749ee172a3d2629887e247b8f1763c5f9e403 21109 ferrum_0.1.0.orig.tar.gz
+ 229aa44ff872d5c90c9b65e350f7e037567e967f605cbf3a06a911aa78163159 1212 ferrum_0.1.0-1.debian.tar.xz
+ c78acbce5108ba3f81a11d78d53b1134c0f303f374adb086f8fde3c3a08056f3 5376 ferrum_0.1.0-1_source.buildinfo
+Files:
+ 1ec08a5a08a22fe1b87ba01e9c88b19f 864 utils optional ferrum_0.1.0-1.dsc
+ 099c319d954ad6edad3de9ebffe86424 21109 utils optional ferrum_0.1.0.orig.tar.gz
+ 8c9c1049f335f1c05a6f538fc25ecb71 1212 utils optional ferrum_0.1.0-1.debian.tar.xz
+ 3c7db3703d67dfcb92f8d211532912f7 5376 utils optional ferrum_0.1.0-1_source.buildinfo

@@ -1,0 +1,25 @@
+Format: 1.8
+Date: Mon, 09 Mar 2026 13:56:15 -0700
+Source: ferrum
+Binary: python3-ferrum
+Architecture: all
+Version: 0.1.0-1
+Distribution: bookworm
+Urgency: low
+Maintainer: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
+Changed-By: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
+Description:
+ python3-ferrum - A fast, stable, DE-agnostic TUI file manager
+Changes:
+ ferrum (0.1.0-1) bookworm; urgency=low
+ .
+   * source package automatically created by stdeb 0.10.0
+Checksums-Sha1:
+ 2038e94c428bb3312a7b694080bd21dfe6d6875c 5438 ferrum_0.1.0-1_amd64.buildinfo
+ 0f553aa5dfaca7828b424fd7b0932e5155495e38 20672 python3-ferrum_0.1.0-1_all.deb
+Checksums-Sha256:
+ fbf48b18c058c9deb4611db0ab6ab602ebad6038a770775d53499a62c95bb155 5438 ferrum_0.1.0-1_amd64.buildinfo
+ ba5d81b082fe7652322454898e3efdf036bbc9de154eedd1d23bdba1ba00ab6b 20672 python3-ferrum_0.1.0-1_all.deb
+Files:
+ 5af80b67ac8b6f655ba350a87de4b509 5438 utils optional ferrum_0.1.0-1_amd64.buildinfo
+ 4c4729bfde9930cd328230a376f05118 20672 utils optional python3-ferrum_0.1.0-1_all.deb

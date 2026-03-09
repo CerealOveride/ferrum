@@ -1,0 +1,3 @@
+[console_scripts]
+fe = ferrum.main:run
+ferrum = ferrum.main:run

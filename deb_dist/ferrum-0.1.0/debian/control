@@ -1,0 +1,33 @@
+Source: ferrum
+Maintainer: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
+Section: utils
+Priority: optional
+Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9)
+Standards-Version: 3.9.6
+Homepage: None
+
+Package: python3-ferrum
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: A fast, stable, DE-agnostic TUI file manager
+ # Ferrum
+ .
+ A fast, stable, DE-agnostic TUI file manager built with Python and Textual.
+ .
+ ## Features
+ .
+ - Browse local and SMB filesystems
+ - Tabs with independent navigation
+ - Collapsible sidebar with places, bookmarks, and saved network shares
+ - Toggleable preview pane with syntax highlighting
+ - Copy, cut, paste with conflict resolution
+ - Trash and permanent delete with confirmation
+ - Rename and new directory
+ - Multi-file selection with space and shift+click
+ - SMB credentials stored in system keyring
+ - Persistent SMB connections across sessions
+ .
+ ## Installation
+ .
+ ### From pip
+
