@@ -32,6 +32,8 @@ class FerrumApp(App):
         Binding("backspace", "navigate_up", "Up"),
         Binding("ctrl+h", "toggle_hidden", "Hidden"),
         Binding("ctrl+b", "toggle_sidebar", "Sidebar"),
+        Binding("ctrl+t", "new_tab", "New Tab"),
+        Binding("ctrl+w", "close_tab", "Close Tab"),
     ]
 
     def __init__(self):
@@ -50,7 +52,6 @@ class FerrumApp(App):
         yield Footer()
 
     def on_directory_requested(self, event: DirectoryRequested) -> None:
-        """Handle navigation requests from the sidebar."""
         self.query_one(FilePane).load_directory(event.path)
 
     def action_navigate_up(self) -> None:
@@ -58,8 +59,16 @@ class FerrumApp(App):
 
     def action_toggle_hidden(self) -> None:
         pane = self.query_one(FilePane)
-        pane.show_hidden = not pane.show_hidden
-        pane.load_directory(pane.current_path)
+        active = pane.get_active_pane()
+        if active:
+            active.show_hidden = not active.show_hidden
+            active.load_directory(active.current_path)
 
     def action_toggle_sidebar(self) -> None:
         self.query_one(Sidebar).toggle()
+
+    def action_new_tab(self) -> None:
+        self.query_one(FilePane).new_tab()
+
+    def action_close_tab(self) -> None:
+        self.query_one(FilePane).close_tab()
