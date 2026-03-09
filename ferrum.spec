@@ -10,8 +10,6 @@ Source0:        https://github.com/CerealOveride/ferrum/archive/refs/tags/v%{ver
 BuildArch:      noarch
 BuildRequires:  python3-devel
 BuildRequires:  python3-pip
-BuildRequires:  python3-build
-BuildRequires:  python3-installer
 
 Requires:       python3
 Requires:       python3-pip
@@ -26,20 +24,30 @@ preview pane, and cross-backend file operations.
 %autosetup -n %{name}-%{version}
 
 %build
-python3 -m build --wheel --no-isolation
+python3 -m pip wheel --no-deps --wheel-dir dist .
 
 %install
-python3 -m installer --destdir=%{buildroot} dist/*.whl
+# Install the wheel
+python3 -m pip install \
+    --no-index \
+    --no-deps \
+    --root=%{buildroot} \
+    --prefix=/usr \
+    --force-reinstall \
+    dist/ferrum-*.whl
 
-# Install bundled wheels
-install -dm755 %{buildroot}%{_datadir}/ferrum/wheels
-install -m644 debian_deps/*.whl %{buildroot}%{_datadir}/ferrum/wheels/
+# Install bundled dependency wheels
+install -dm755 %{buildroot}/usr/share/ferrum/wheels
+install -m644 debian_deps/*.whl %{buildroot}/usr/share/ferrum/wheels/
 
 # Install desktop file
-install -Dm644 ferrum.desktop %{buildroot}%{_datadir}/applications/ferrum.desktop
+install -Dm644 ferrum.desktop %{buildroot}/usr/share/applications/ferrum.desktop
+
+# Install license
+install -Dm644 LICENSE %{buildroot}/usr/share/licenses/ferrum/LICENSE
 
 %post
-WHEELS_DIR="%{_datadir}/ferrum/wheels"
+WHEELS_DIR="/usr/share/ferrum/wheels"
 if [ -d "$WHEELS_DIR" ]; then
     pip3 install \
         --no-index \
@@ -51,13 +59,13 @@ if [ -d "$WHEELS_DIR" ]; then
 fi
 
 %files
-%license LICENSE
 %{_bindir}/fe
 %{_bindir}/ferrum
-%{python3_sitelib}/ferrum/
-%{python3_sitelib}/ferrum-*.dist-info/
-%{_datadir}/ferrum/wheels/
-%{_datadir}/applications/ferrum.desktop
+/usr/lib/python3/dist-packages/ferrum/
+/usr/lib/python3/dist-packages/ferrum-*.dist-info/
+/usr/share/ferrum/wheels/
+/usr/share/applications/ferrum.desktop
+/usr/share/licenses/ferrum/LICENSE
 
 %changelog
 * Mon Mar 09 2026 CerealOveride <150073255+CerealOveride@users.noreply.github.com> - 0.1.0-1
