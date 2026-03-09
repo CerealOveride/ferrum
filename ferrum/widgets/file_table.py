@@ -6,7 +6,7 @@ from textual import on
 from textual.events import Click
 
 from ferrum.backends.base import FileEntry
-from ferrum.messages import DirectoryRequested, FileSelected
+from ferrum.messages import DirectoryRequested, FileSelected, FileOpened
 
 
 def format_size(size: int, is_dir: bool) -> str:

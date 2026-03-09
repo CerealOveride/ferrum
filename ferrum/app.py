@@ -11,7 +11,7 @@ from ferrum.widgets.sidebar import Sidebar
 from ferrum.widgets.preview import PreviewPane
 from ferrum.widgets.footer import FerrumFooter
 from ferrum.widgets.dialogs import ConflictDialog, ConfirmDialog, InputDialog
-from ferrum.messages import DirectoryRequested, FileSelected
+from ferrum.messages import DirectoryRequested, FileSelected, FileOpened
 from ferrum.operations.manager import OperationsManager
 from ferrum.operations.types import ConflictResolution
 
@@ -82,6 +82,17 @@ class FerrumApp(App):
 
     def on_file_selected(self, event: FileSelected) -> None:
         self.query_one(PreviewPane).preview(event.path)
+
+    @work
+    async def on_file_opened(self, event: FileOpened) -> None:
+        """Open a file with xdg-open."""
+        from ferrum.opener import open_file
+        # Also update preview
+        self.query_one(PreviewPane).preview(event.path)
+        try:
+            await open_file(event.path)
+        except Exception as e:
+            self.notify(f"Cannot open file: {e}", severity="error")
 
     def _get_active_pane(self):
         return self.query_one(FilePane).get_active_pane()

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Ferrum
+GenericName=File Manager
+Comment=A fast, stable, DE-agnostic TUI file manager
+Exec=fe
+Icon=system-file-manager
+Type=Application
+Categories=FileManager;System;FileTools;
+Keywords=files;file manager;tui;terminal;
+Terminal=true
+StartupNotify=false

@@ -8,7 +8,7 @@ from ferrum.backends.local import LocalBackend
 from ferrum.backends.router import get_backend_for_path, is_smb_path
 from ferrum.widgets.file_table import FileTable
 from ferrum.widgets.path_bar import PathBar
-from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected
+from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected, FileOpened
 from ferrum.widgets.preview import PreviewPane
 
 

@@ -33,6 +33,13 @@ class FileSelected(Message):
         self.path = path
 
 
+class FileOpened(Message):
+    """A file has been opened (Enter/double-click)."""
+    def __init__(self, path: str) -> None:
+        super().__init__()
+        self.path = path
+
+
 class OperationStarted(Message):
     """A file operation has started."""
     def __init__(self, operation_id: str, description: str) -> None:
