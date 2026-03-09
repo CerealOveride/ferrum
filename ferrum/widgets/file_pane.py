@@ -60,6 +60,21 @@ class SinglePane(Widget):
         event.stop()
         self.query_one(PathBar).update_path(event.path)
         self.query_one(FileTable).populate(event.entries, self.show_hidden)
+        # Update the parent TabPane label to reflect current directory
+        from textual.widgets import TabPane, TabbedContent
+        from pathlib import PurePosixPath
+        try:
+            tab_pane = self.parent
+            if isinstance(tab_pane, TabPane):
+                if is_smb_path(event.path):
+                    label = PurePosixPath(event.path).name or event.path
+                else:
+                    label = Path(event.path).name or event.path
+                tabbed = tab_pane.parent.parent  # TabPane → ContentSwitcher → TabbedContent
+                if isinstance(tabbed, TabbedContent):
+                    tabbed.get_tab(tab_pane.id).label = label
+        except Exception:
+            pass
 
     @on(DirectoryError)
     def on_directory_error(self, event: DirectoryError) -> None:
