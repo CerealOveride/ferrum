@@ -3,15 +3,16 @@ Source: ferrum
 Architecture: source
 Version: 0.1.0-1
 Checksums-Md5:
- 1ec08a5a08a22fe1b87ba01e9c88b19f 864 ferrum_0.1.0-1.dsc
+ 1b0559402b80184164372c0f2754ddb4 870 ferrum_0.1.0-1.dsc
 Checksums-Sha1:
- ec1642b44917c0cbb349b2847ae711417d5f2d0b 864 ferrum_0.1.0-1.dsc
+ 851e3c2cde4d20866824fdc451e68e8542f8dced 870 ferrum_0.1.0-1.dsc
 Checksums-Sha256:
- d0b316c23e12854a99902ec41b9cfdb5f3c79f23eec8b796c1304034038b5eea 864 ferrum_0.1.0-1.dsc
+ a395082e032185dba5023ecb7b3c86c92a18073fc3cb0086618ac6d5639d56ac 870 ferrum_0.1.0-1.dsc
 Build-Origin: Debian
 Build-Architecture: amd64
-Build-Date: Mon, 09 Mar 2026 13:56:16 -0700
+Build-Date: Mon, 09 Mar 2026 16:42:01 -0700
 Build-Tainted-By:
+ usr-local-has-libraries
  usr-local-has-programs
 Installed-Build-Depends:
  autoconf (= 2.72-3.1),
@@ -188,4 +189,4 @@ Installed-Build-Depends:
 Environment:
  DEB_BUILD_OPTIONS="parallel=4"
  LANG="en_US.UTF-8"
- SOURCE_DATE_EPOCH="1773089775"
+ SOURCE_DATE_EPOCH="1773099720"

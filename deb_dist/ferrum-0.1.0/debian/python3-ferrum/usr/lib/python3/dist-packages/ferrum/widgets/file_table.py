@@ -1,6 +1,6 @@
 from datetime import datetime
 from textual.widget import Widget
-from textual.widgets import DataTable
+from textual.widgets import DataTable, Input
 from textual.app import ComposeResult
 from textual import on
 from textual.events import Click
@@ -43,23 +43,88 @@ class FileTable(Widget):
         self.date_format = date_format
         self._entries: list[FileEntry] = []
         self._selected: set[int] = set()
+        self._sort_column: str = "Name"
+        self._sort_reverse: bool = False
+        self._all_entries: list = []  # unfiltered, unsorted master list
         self._last_click_row: int | None = None
+        self._search_query: str = ""
+        self._search_visible: bool = False
 
     def compose(self) -> ComposeResult:
+        yield Input(placeholder="Search...", id="search-bar")
         table = DataTable(cursor_type="row")
         table.add_columns("Name", "Size", "Modified")
         yield table
 
     def populate(self, entries: list[FileEntry], show_hidden: bool = False) -> None:
+        self._all_entries = entries
+        self._show_hidden = show_hidden
+        self._apply_sort()
+
+    def _apply_sort(self) -> None:
         table = self.query_one(DataTable)
-        table.clear()
+        table.clear(columns=True)
+        # Rebuild columns with sort indicator on active column
+        for name in ("Name", "Size", "Modified"):
+            if name == self._sort_column:
+                table.add_column(f"{name} {'▼' if self._sort_reverse else '▲'}", key=name)
+            else:
+                table.add_column(name, key=name)
         self._entries = []
         self._selected = set()
-        for entry in entries:
-            if not show_hidden and entry.is_hidden:
-                continue
+        try:
+            from ferrum.widgets.footer import FerrumFooter
+            footer = self.app.query_one(FerrumFooter)
+            footer.update_selection(0, 0)
+        except Exception:
+            pass
+
+        show_hidden = getattr(self, "_show_hidden", False)
+        query = getattr(self, "_search_query", "")
+        visible = [e for e in self._all_entries if show_hidden or not e.is_hidden]
+        if query:
+            visible = [e for e in visible if query in e.name.lower()]
+
+        # Always sort dirs first, then apply column sort
+        col = self._sort_column
+        rev = self._sort_reverse
+        if col == "Name":
+            key_fn = lambda e: (not e.is_dir, e.name.lower())
+        elif col == "Size":
+            key_fn = lambda e: (not e.is_dir, e.size or 0)
+        elif col == "Modified":
+            key_fn = lambda e: (not e.is_dir, e.modified or 0)
+        else:
+            key_fn = lambda e: (not e.is_dir, e.name.lower())
+
+        # Reverse only the within-group sort, not the dirs-first ordering
+        dirs = sorted([e for e in visible if e.is_dir], key=lambda e: e.name.lower() if col == "Name" else (e.size or 0) if col == "Size" else (e.modified or 0), reverse=rev)
+        files = sorted([e for e in visible if not e.is_dir], key=lambda e: e.name.lower() if col == "Name" else (e.size or 0) if col == "Size" else (e.modified or 0), reverse=rev)
+        sorted_entries = dirs + files
+
+        for entry in sorted_entries:
             self._entries.append(entry)
             self._add_row(len(self._entries) - 1)
+
+    @on(DataTable.HeaderSelected)
+    def on_header_selected(self, event: DataTable.HeaderSelected) -> None:
+        """Sort by clicked column header."""
+        # Strip any existing sort indicator to get the base column name
+        col_label = str(event.label).strip().rstrip("▲▼").strip()
+        if self._sort_column == col_label:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_column = col_label
+            self._sort_reverse = False
+        self._apply_sort()
+        # Update column headers to show sort indicator
+        table = self.query_one(DataTable)
+        for col in table.columns.values():
+            label = str(col.label).strip().rstrip("▲▼").strip()
+            if label == col_label:
+                col.label = f"{label} {'▼' if self._sort_reverse else '▲'}"
+            else:
+                col.label = label
 
     def _add_row(self, idx: int) -> None:
         table = self.query_one(DataTable)
@@ -97,6 +162,7 @@ class FileTable(Widget):
         else:
             self._selected.add(row)
         self._refresh_rows()
+        self._notify_selection()
 
     def range_select(self, from_row: int, to_row: int) -> None:
         start = min(from_row, to_row)
@@ -104,6 +170,45 @@ class FileTable(Widget):
         for i in range(start, end + 1):
             self._selected.add(i)
         self._refresh_rows()
+        self._notify_selection()
+
+    def show_search(self) -> None:
+        """Show the search bar and focus it."""
+        bar = self.query_one("#search-bar", Input)
+        self._search_visible = True
+        bar.add_class("visible")
+        bar.styles.display = "block"
+        bar.focus()
+
+    def hide_search(self) -> None:
+        """Hide the search bar and clear the filter."""
+        bar = self.query_one("#search-bar", Input)
+        bar.value = ""
+        self._search_query = ""
+        self._search_visible = False
+        bar.remove_class("visible")
+        bar.styles.display = "none"
+        self._apply_sort()
+        self.query_one(DataTable).focus()
+
+    @on(Input.Changed, "#search-bar")
+    def on_search_changed(self, event: Input.Changed) -> None:
+        self._search_query = event.value.lower()
+        self._apply_sort()
+
+    @on(Input.Submitted, "#search-bar")
+    def on_search_submitted(self, event: Input.Submitted) -> None:
+        """Enter in search bar moves focus to table."""
+        self.query_one(DataTable).focus()
+
+    def _notify_selection(self) -> None:
+        """Update footer with current selection count."""
+        try:
+            from ferrum.widgets.footer import FerrumFooter
+            footer = self.app.query_one(FerrumFooter)
+            footer.update_selection(len(self._selected), len(self._entries))
+        except Exception:
+            pass
 
     @on(DataTable.RowHighlighted)
     def on_row_highlighted(self, event: DataTable.RowHighlighted) -> None:

@@ -10,11 +10,11 @@ Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9)
 Package-List:
  python3-ferrum deb utils optional arch=all
 Checksums-Sha1:
- cbd0c484e73a097999a8a2283558b2f95167ff1d 21109 ferrum_0.1.0.orig.tar.gz
- 26140e30aee7ab7bed22ac30500519ebad327e23 1212 ferrum_0.1.0-1.debian.tar.xz
+ 5a4f90f5f4f3e04cbe5c840df061a92f5fbc8379 7580437 ferrum_0.1.0.orig.tar.gz
+ 41df454a1464a0f9fc7491a2754a5f6cfaa82901 1216 ferrum_0.1.0-1.debian.tar.xz
 Checksums-Sha256:
- 2a4c39ee6e0472db4a8add643fc749ee172a3d2629887e247b8f1763c5f9e403 21109 ferrum_0.1.0.orig.tar.gz
- 229aa44ff872d5c90c9b65e350f7e037567e967f605cbf3a06a911aa78163159 1212 ferrum_0.1.0-1.debian.tar.xz
+ 8dd4234995227c6ddb8efc86b21d905203e832ede53a9703ca4f380344bc6ba2 7580437 ferrum_0.1.0.orig.tar.gz
+ b3a15bf65a84625314985e6dbd05371e5f07e717c54808fcdfaa5e7bfe5522a7 1216 ferrum_0.1.0-1.debian.tar.xz
 Files:
- 099c319d954ad6edad3de9ebffe86424 21109 ferrum_0.1.0.orig.tar.gz
- 8c9c1049f335f1c05a6f538fc25ecb71 1212 ferrum_0.1.0-1.debian.tar.xz
+ 7137fa15a97bf050fe7d181e31f5767c 7580437 ferrum_0.1.0.orig.tar.gz
+ 1cb102fe66802260328d0be744bf5d06 1216 ferrum_0.1.0-1.debian.tar.xz

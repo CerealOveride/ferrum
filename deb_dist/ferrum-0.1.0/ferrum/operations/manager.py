@@ -135,6 +135,7 @@ class OperationsManager:
         return ConflictResolution.SKIP
 
     async def _execute_copy(self, op: FileOperation) -> None:
+        from ferrum.backends.router import is_smb_path
         dst_base = Path(op.destination)
         for i, src in enumerate(op.sources):
             src_path = Path(src)
@@ -142,51 +143,181 @@ class OperationsManager:
             op.current_file = src_path.name
             op.completed_files = i
 
-            if dst.exists():
+            # Conflict resolution — only for local destinations
+            if not is_smb_path(str(dst)) and dst.exists():
                 resolution = await self._resolve_conflict(op, dst)
                 if resolution == ConflictResolution.SKIP:
                     continue
                 elif resolution == ConflictResolution.RENAME:
                     dst = self._unique_name(dst)
-                # OVERWRITE falls through
 
-            if src_path.is_dir():
-                shutil.copytree(str(src_path), str(dst), dirs_exist_ok=True)
+            src_is_smb = is_smb_path(src)
+            dst_is_smb = is_smb_path(str(dst_base))
+
+            if not src_is_smb and not dst_is_smb:
+                # Local → Local
+                if src_path.is_dir():
+                    shutil.copytree(str(src_path), str(dst), dirs_exist_ok=True)
+                else:
+                    shutil.copy2(str(src_path), str(dst))
             else:
-                shutil.copy2(str(src_path), str(dst))
+                # Cross-backend or SMB → SMB
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._cross_copy_file_sync, src, str(dst_base)
+                )
 
-            op.completed_files = i + 1
-            op.progress = op.completed_files / op.total_files
-            if self.on_progress:
-                await self.on_progress(op)
-            await asyncio.sleep(0)  # yield to event loop
-
-    async def _execute_move(self, op: FileOperation) -> None:
-        dst_base = Path(op.destination)
-        for i, src in enumerate(op.sources):
-            src_path = Path(src)
-            dst = dst_base / src_path.name
-            op.current_file = src_path.name
-            op.completed_files = i
-
-            if dst.exists():
-                resolution = await self._resolve_conflict(op, dst)
-                if resolution == ConflictResolution.SKIP:
-                    continue
-                elif resolution == ConflictResolution.RENAME:
-                    dst = self._unique_name(dst)
-                elif resolution == ConflictResolution.OVERWRITE:
-                    if dst.is_dir():
-                        shutil.rmtree(str(dst))
-                    else:
-                        dst.unlink()
-
-            shutil.move(str(src_path), str(dst))
             op.completed_files = i + 1
             op.progress = op.completed_files / op.total_files
             if self.on_progress:
                 await self.on_progress(op)
             await asyncio.sleep(0)
+
+    async def _execute_move(self, op: FileOperation) -> None:
+        from ferrum.backends.router import is_smb_path
+        dst_base = Path(op.destination)
+        for i, src in enumerate(op.sources):
+            src_path = Path(src)
+            dst = dst_base / src_path.name
+            op.current_file = src_path.name
+            op.completed_files = i
+
+            src_is_smb = is_smb_path(src)
+            dst_is_smb = is_smb_path(str(dst_base))
+
+            if not src_is_smb and not dst_is_smb:
+                # Local → Local
+                if dst.exists():
+                    resolution = await self._resolve_conflict(op, dst)
+                    if resolution == ConflictResolution.SKIP:
+                        continue
+                    elif resolution == ConflictResolution.RENAME:
+                        dst = self._unique_name(dst)
+                    elif resolution == ConflictResolution.OVERWRITE:
+                        if dst.is_dir():
+                            shutil.rmtree(str(dst))
+                        else:
+                            dst.unlink()
+                shutil.move(str(src_path), str(dst))
+            else:
+                # Cross-backend: copy then delete source
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._cross_copy_file_sync, src, str(dst_base)
+                )
+                # Delete source after successful copy
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._cross_delete_sync, src
+                )
+
+            op.completed_files = i + 1
+            op.progress = op.completed_files / op.total_files
+            if self.on_progress:
+                await self.on_progress(op)
+            await asyncio.sleep(0)
+
+    def _cross_copy_file_sync(self, src: str, dst_dir: str) -> None:
+        """Copy a file between any combination of local and SMB paths."""
+        import smbclient
+        from ferrum.backends.router import is_smb_path, _find_username_for_host, KEYRING_SERVICE
+        from ferrum.backends.smb import parse_smb_url, smb_path
+        import keyring
+
+        src_is_smb = is_smb_path(src)
+        dst_is_smb = is_smb_path(dst_dir)
+
+        filename = Path(src).name if not src_is_smb else src.rstrip("/").split("/")[-1]
+
+        def _ensure_smb_session(host):
+            username = _find_username_for_host(host)
+            password = keyring.get_password(KEYRING_SERVICE, f"{username}@{host}") if username else None
+            kwargs = {}
+            if username:
+                kwargs["username"] = username
+            if password:
+                kwargs["password"] = password
+            try:
+                smbclient.register_session(host, **kwargs)
+            except Exception:
+                pass
+
+        CHUNK = 4 * 1024 * 1024  # 4MB chunks
+
+        if src_is_smb and not dst_is_smb:
+            # SMB → Local
+            host, share, remaining = parse_smb_url(src)
+            unc = smb_path(host, share, remaining)
+            _ensure_smb_session(host)
+            dst_path = Path(dst_dir) / filename
+            with smbclient.open_file(unc, mode="rb") as src_f:
+                with open(dst_path, "wb") as dst_f:
+                    while True:
+                        chunk = src_f.read(CHUNK)
+                        if not chunk:
+                            break
+                        dst_f.write(chunk)
+
+        elif not src_is_smb and dst_is_smb:
+            # Local → SMB
+            host, share, remaining = parse_smb_url(dst_dir)
+            unc_dir = smb_path(host, share, remaining)
+            unc_dst = unc_dir + "\\" + filename
+            _ensure_smb_session(host)
+            with open(src, "rb") as src_f:
+                with smbclient.open_file(unc_dst, mode="wb") as dst_f:
+                    while True:
+                        chunk = src_f.read(CHUNK)
+                        if not chunk:
+                            break
+                        dst_f.write(chunk)
+
+        else:
+            # SMB → SMB
+            src_host, src_share, src_remaining = parse_smb_url(src)
+            src_unc = smb_path(src_host, src_share, src_remaining)
+            _ensure_smb_session(src_host)
+
+            dst_host, dst_share, dst_remaining = parse_smb_url(dst_dir)
+            dst_unc = smb_path(dst_host, dst_share, dst_remaining) + "\\" + filename
+            _ensure_smb_session(dst_host)
+
+            with smbclient.open_file(src_unc, mode="rb") as src_f:
+                with smbclient.open_file(dst_unc, mode="wb") as dst_f:
+                    while True:
+                        chunk = src_f.read(CHUNK)
+                        if not chunk:
+                            break
+                        dst_f.write(chunk)
+
+    def _cross_delete_sync(self, path: str) -> None:
+        """Delete a file or directory at a local or SMB path."""
+        import smbclient
+        from ferrum.backends.router import is_smb_path, _find_username_for_host, KEYRING_SERVICE
+        from ferrum.backends.smb import parse_smb_url, smb_path
+        import keyring
+
+        if is_smb_path(path):
+            host, share, remaining = parse_smb_url(path)
+            unc = smb_path(host, share, remaining)
+            username = _find_username_for_host(host)
+            password = keyring.get_password(KEYRING_SERVICE, f"{username}@{host}") if username else None
+            kwargs = {}
+            if username:
+                kwargs["username"] = username
+            if password:
+                kwargs["password"] = password
+            try:
+                smbclient.register_session(host, **kwargs)
+            except Exception:
+                pass
+            if smbclient.path.isdir(unc):
+                smbclient.rmdir(unc)
+            else:
+                smbclient.remove(unc)
+        else:
+            p = Path(path)
+            if p.is_dir():
+                shutil.rmtree(str(p))
+            else:
+                p.unlink()
 
     async def _execute_delete(self, op: FileOperation) -> None:
         for i, src in enumerate(op.sources):

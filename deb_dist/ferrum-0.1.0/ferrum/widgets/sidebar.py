@@ -45,6 +45,8 @@ class Sidebar(Widget):
     def __init__(self, bookmarks: dict[str, str] = None, smb_connections: list = None) -> None:
         super().__init__()
         self.bookmarks = bookmarks or {}
+        self._shift_held = False
+        self._shift_held = False
         self.smb_connections = smb_connections or []
 
     def compose(self) -> ComposeResult:
@@ -69,7 +71,8 @@ class Sidebar(Widget):
         }
         if user_bookmarks:
             for name, path in user_bookmarks.items():
-                bookmarks.add_leaf(f"📌 {name}", data={"path": path})
+                bm_node = bookmarks.add(f"📌 {name}", data={"path": path, "bookmark": name})
+                bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
         bookmarks.add_leaf("+ Add bookmark", data={"action": "add_bookmark"})
 
         # Network section
@@ -93,7 +96,11 @@ class Sidebar(Widget):
             if data["action"] == "add_connection":
                 self.app.run_worker(self._add_smb_connection(), exclusive=True)
             elif data["action"] == "add_bookmark":
-                self.app.notify("Add bookmark: coming soon")
+                self.app.run_worker(self._add_bookmark(), exclusive=True)
+            elif data["action"] == "remove_bookmark":
+                name = data.get("bookmark", "")
+                parent_node = event.node.parent
+                self.app.run_worker(self._remove_bookmark(parent_node, name), exclusive=True)
             return
 
         if "path" in data:
@@ -144,6 +151,119 @@ class Sidebar(Widget):
             path = f"//{result['host']}/{result['share']}"
             self.post_message(DirectoryRequested(path))
             self.app.notify(f"Connecting to {result['name']}...")
+
+    async def _add_bookmark(self) -> None:
+        """Add current directory as a bookmark."""
+        from ferrum.widgets.dialogs import InputDialog
+
+        # Get current path from the active pane
+        try:
+            from ferrum.widgets.file_pane import FilePane
+            pane = self.app.query_one(FilePane)
+            current_path = pane.get_active_pane().current_path
+        except Exception:
+            self.app.notify("Cannot determine current directory", severity="error")
+            return
+
+        from pathlib import Path, PurePosixPath
+        from ferrum.backends.router import is_smb_path
+        if is_smb_path(current_path):
+            default_name = PurePosixPath(current_path).name or current_path
+        else:
+            default_name = Path(current_path).name or current_path
+
+        result = await self.app.push_screen_wait(
+            InputDialog(title="Add Bookmark", placeholder="Bookmark name", initial=default_name)
+        )
+        if not result:
+            return
+
+        name = result.strip()
+        if not name:
+            return
+
+        # Save to config
+        from ferrum.config import save_bookmark
+        save_bookmark(name, current_path)
+
+        # Add to sidebar tree
+        tree = self.query_one(Tree)
+        bookmarks_node = None
+        for child in tree.root.children:
+            if child.label.plain == "Bookmarks":
+                bookmarks_node = child
+                break
+
+        if bookmarks_node:
+            # Insert before the "+ Add bookmark" leaf
+            bm_node = bookmarks_node.add(f"📌 {name}", data={"path": current_path, "bookmark": name})
+            bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
+
+        self.app.notify(f"Bookmarked: {name}")
+
+    async def _remove_bookmark(self, node, name: str = "") -> None:
+        """Remove a bookmark after confirmation."""
+        from ferrum.widgets.dialogs import ConfirmDialog
+        if not name and node and node.data:
+            name = node.data.get("bookmark", "")
+        confirmed = await self.app.push_screen_wait(
+            ConfirmDialog(title="Remove Bookmark", message=f"Remove bookmark '{name}'?")
+        )
+        if confirmed:
+            from ferrum.config import remove_bookmark
+            remove_bookmark(name)
+            if node:
+                node.remove()
+            self.app.notify(f"Removed bookmark: {name}")
+
+    async def _add_bookmark(self) -> None:
+        """Add current directory as a bookmark."""
+        from ferrum.widgets.dialogs import InputDialog
+
+        # Get current path from the active pane
+        try:
+            from ferrum.widgets.file_pane import FilePane
+            pane = self.app.query_one(FilePane)
+            current_path = pane.get_active_pane().current_path
+        except Exception:
+            self.app.notify("Cannot determine current directory", severity="error")
+            return
+
+        from pathlib import Path, PurePosixPath
+        from ferrum.backends.router import is_smb_path
+        if is_smb_path(current_path):
+            default_name = PurePosixPath(current_path).name or current_path
+        else:
+            default_name = Path(current_path).name or current_path
+
+        result = await self.app.push_screen_wait(
+            InputDialog(title="Add Bookmark", placeholder="Bookmark name", initial=default_name)
+        )
+        if not result:
+            return
+
+        name = result.strip()
+        if not name:
+            return
+
+        # Save to config
+        from ferrum.config import save_bookmark
+        save_bookmark(name, current_path)
+
+        # Add to sidebar tree
+        tree = self.query_one(Tree)
+        bookmarks_node = None
+        for child in tree.root.children:
+            if child.label.plain == "Bookmarks":
+                bookmarks_node = child
+                break
+
+        if bookmarks_node:
+            # Insert before the "+ Add bookmark" leaf
+            bm_node = bookmarks_node.add(f"📌 {name}", data={"path": current_path, "bookmark": name})
+            bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
+
+        self.app.notify(f"Bookmarked: {name}")
 
     def toggle(self) -> None:
         """Show or hide the sidebar."""

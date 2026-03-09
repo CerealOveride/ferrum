@@ -1,5 +1,5 @@
 Format: 1.8
-Date: Mon, 09 Mar 2026 13:56:15 -0700
+Date: Mon, 09 Mar 2026 16:42:00 -0700
 Source: ferrum
 Architecture: source
 Version: 0.1.0-1
@@ -12,17 +12,17 @@ Changes:
  .
    * source package automatically created by stdeb 0.10.0
 Checksums-Sha1:
- ec1642b44917c0cbb349b2847ae711417d5f2d0b 864 ferrum_0.1.0-1.dsc
- cbd0c484e73a097999a8a2283558b2f95167ff1d 21109 ferrum_0.1.0.orig.tar.gz
- 26140e30aee7ab7bed22ac30500519ebad327e23 1212 ferrum_0.1.0-1.debian.tar.xz
- b400ea7b2ddc8aaeb0a575357f759c5bd5590c20 5376 ferrum_0.1.0-1_source.buildinfo
+ 851e3c2cde4d20866824fdc451e68e8542f8dced 870 ferrum_0.1.0-1.dsc
+ 5a4f90f5f4f3e04cbe5c840df061a92f5fbc8379 7580437 ferrum_0.1.0.orig.tar.gz
+ 41df454a1464a0f9fc7491a2754a5f6cfaa82901 1216 ferrum_0.1.0-1.debian.tar.xz
+ 6573c6eff25b548d7ee1dd1099698a0ca1a93119 5401 ferrum_0.1.0-1_source.buildinfo
 Checksums-Sha256:
- d0b316c23e12854a99902ec41b9cfdb5f3c79f23eec8b796c1304034038b5eea 864 ferrum_0.1.0-1.dsc
- 2a4c39ee6e0472db4a8add643fc749ee172a3d2629887e247b8f1763c5f9e403 21109 ferrum_0.1.0.orig.tar.gz
- 229aa44ff872d5c90c9b65e350f7e037567e967f605cbf3a06a911aa78163159 1212 ferrum_0.1.0-1.debian.tar.xz
- c78acbce5108ba3f81a11d78d53b1134c0f303f374adb086f8fde3c3a08056f3 5376 ferrum_0.1.0-1_source.buildinfo
+ a395082e032185dba5023ecb7b3c86c92a18073fc3cb0086618ac6d5639d56ac 870 ferrum_0.1.0-1.dsc
+ 8dd4234995227c6ddb8efc86b21d905203e832ede53a9703ca4f380344bc6ba2 7580437 ferrum_0.1.0.orig.tar.gz
+ b3a15bf65a84625314985e6dbd05371e5f07e717c54808fcdfaa5e7bfe5522a7 1216 ferrum_0.1.0-1.debian.tar.xz
+ dddc861b50b3cd71747467e62c5fce0cd550962c61d0752258a8ef99921ad1ee 5401 ferrum_0.1.0-1_source.buildinfo
 Files:
- 1ec08a5a08a22fe1b87ba01e9c88b19f 864 utils optional ferrum_0.1.0-1.dsc
- 099c319d954ad6edad3de9ebffe86424 21109 utils optional ferrum_0.1.0.orig.tar.gz
- 8c9c1049f335f1c05a6f538fc25ecb71 1212 utils optional ferrum_0.1.0-1.debian.tar.xz
- 3c7db3703d67dfcb92f8d211532912f7 5376 utils optional ferrum_0.1.0-1_source.buildinfo
+ 1b0559402b80184164372c0f2754ddb4 870 utils optional ferrum_0.1.0-1.dsc
+ 7137fa15a97bf050fe7d181e31f5767c 7580437 utils optional ferrum_0.1.0.orig.tar.gz
+ 1cb102fe66802260328d0be744bf5d06 1216 utils optional ferrum_0.1.0-1.debian.tar.xz
+ 6d4d8548d9f44b7d144c6d9a38aaef97 5401 utils optional ferrum_0.1.0-1_source.buildinfo

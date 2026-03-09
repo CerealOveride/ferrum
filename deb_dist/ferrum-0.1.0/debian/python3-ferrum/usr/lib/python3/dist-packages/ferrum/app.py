@@ -38,6 +38,8 @@ class FerrumApp(App):
         Binding("backspace", "navigate_up", "Up"),
         Binding("ctrl+h", "toggle_hidden", "Hidden"),
         Binding("ctrl+b", "toggle_sidebar", "Sidebar"),
+        Binding("ctrl+f", "search", "Search", show=False),
+        Binding("escape", "clear_search", "Clear Search", show=False),
         Binding("ctrl+t", "new_tab", "New Tab"),
         Binding("ctrl+w", "close_tab", "Close Tab"),
         Binding("ctrl+e", "toggle_preview", "Preview"),
@@ -147,6 +149,30 @@ class FerrumApp(App):
 
     def action_toggle_sidebar(self) -> None:
         self.query_one(Sidebar).toggle()
+
+    def action_search(self) -> None:
+        """Show search bar in active file table."""
+        try:
+            from ferrum.widgets.file_pane import FilePane
+            pane = self.query_one(FilePane).get_active_pane()
+            if pane:
+                pane.query_one("FileTable").show_search()
+        except Exception:
+            pass
+
+    def action_clear_search(self) -> None:
+        """Hide search bar if visible."""
+        try:
+            from ferrum.widgets.file_pane import FilePane
+            from ferrum.widgets.file_table import FileTable
+            pane = self.query_one(FilePane).get_active_pane()
+            if pane:
+                ft = pane.query_one(FileTable)
+                if ft._search_visible:
+                    ft.hide_search()
+        except Exception:
+            pass
+
 
     def action_new_tab(self) -> None:
         self.query_one(FilePane).new_tab()

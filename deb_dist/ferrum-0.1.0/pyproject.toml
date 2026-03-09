@@ -8,9 +8,10 @@ dependencies = [
     "textual>=0.47.0",
     "aiofiles>=23.0.0",
     "smbprotocol>=1.12.0",
-    "send2trash>=2.1.0",
-    "keyring>=25.7.0",
-    "keyrings.alt>=5.0.2",
+    "send2trash>=1.8.0",
+    "keyring>=24.0.0",
+    "keyrings.alt>=4.0.0",
+    "rich>=13.0.0",
 ]
 
 [project.scripts]
@@ -19,6 +20,35 @@ ferrum = "ferrum.main:run"
 
 [tool.setuptools.packages.find]
 include = ["ferrum*"]
+
+[tool.setuptools.data-files]
+"share/ferrum/wheels" = [
+    "debian_deps/aiofiles-25.1.0-py3-none-any.whl",
+    "debian_deps/cffi-2.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "debian_deps/cryptography-46.0.5-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "debian_deps/jaraco.classes-3.4.0-py3-none-any.whl",
+    "debian_deps/jaraco_context-6.1.1-py3-none-any.whl",
+    "debian_deps/jaraco_functools-4.4.0-py3-none-any.whl",
+    "debian_deps/jeepney-0.9.0-py3-none-any.whl",
+    "debian_deps/keyring-25.7.0-py3-none-any.whl",
+    "debian_deps/keyrings.alt-5.0.2-py3-none-any.whl",
+    "debian_deps/linkify_it_py-2.1.0-py3-none-any.whl",
+    "debian_deps/markdown_it_py-4.0.0-py3-none-any.whl",
+    "debian_deps/mdit_py_plugins-0.5.0-py3-none-any.whl",
+    "debian_deps/mdurl-0.1.2-py3-none-any.whl",
+    "debian_deps/more_itertools-10.8.0-py3-none-any.whl",
+    "debian_deps/platformdirs-4.9.4-py3-none-any.whl",
+    "debian_deps/pycparser-3.0-py3-none-any.whl",
+    "debian_deps/pygments-2.19.2-py3-none-any.whl",
+    "debian_deps/pyspnego-0.12.1-py3-none-any.whl",
+    "debian_deps/rich-14.3.3-py3-none-any.whl",
+    "debian_deps/secretstorage-3.5.0-py3-none-any.whl",
+    "debian_deps/send2trash-2.1.0-py3-none-any.whl",
+    "debian_deps/smbprotocol-1.16.0-py3-none-any.whl",
+    "debian_deps/textual-8.0.2-py3-none-any.whl",
+    "debian_deps/typing_extensions-4.15.0-py3-none-any.whl",
+    "debian_deps/uc_micro_py-2.0.0-py3-none-any.whl"
+]
 
 [build-system]
 requires = ["hatchling", "setuptools"]

@@ -3,8 +3,8 @@ Source: ferrum
 Version: 0.1.0-1
 Architecture: all
 Maintainer: CerealOveride <150073255+CerealOveride@users.noreply.github.com>
-Installed-Size: 120
-Depends: python3-aiofiles, python3-keyring, python3-keyrings.alt, python3-send2trash, python3-textual, python3:any
+Installed-Size: 7673
+Depends: python3-aiofiles, python3-keyring, python3-keyrings.alt, python3-rich, python3-send2trash, python3-textual, python3:any
 Section: utils
 Priority: optional
 Homepage: None

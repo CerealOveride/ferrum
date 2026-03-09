@@ -222,3 +222,34 @@ def _toml_value(v) -> str:
     elif isinstance(v, float):
         return str(v)
     return f'"{v}"' 
+
+def save_bookmark(name: str, path: str) -> None:
+    """Save a bookmark to user config."""
+    ensure_config_dir()
+
+    if USER_CONFIG.exists():
+        with open(USER_CONFIG, "rb") as f:
+            import tomllib
+            data = tomllib.load(f)
+    else:
+        data = {}
+
+    if "bookmarks" not in data:
+        data["bookmarks"] = {}
+
+    data["bookmarks"][name] = path
+    _write_config(data)
+
+
+def remove_bookmark(name: str) -> None:
+    """Remove a bookmark from user config."""
+    if not USER_CONFIG.exists():
+        return
+
+    with open(USER_CONFIG, "rb") as f:
+        import tomllib
+        data = tomllib.load(f)
+
+    if "bookmarks" in data and name in data["bookmarks"]:
+        del data["bookmarks"][name]
+        _write_config(data)

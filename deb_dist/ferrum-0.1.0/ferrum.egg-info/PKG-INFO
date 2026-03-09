@@ -7,9 +7,10 @@ Description-Content-Type: text/markdown
 Requires-Dist: textual>=0.47.0
 Requires-Dist: aiofiles>=23.0.0
 Requires-Dist: smbprotocol>=1.12.0
-Requires-Dist: send2trash>=2.1.0
-Requires-Dist: keyring>=25.7.0
-Requires-Dist: keyrings.alt>=5.0.2
+Requires-Dist: send2trash>=1.8.0
+Requires-Dist: keyring>=24.0.0
+Requires-Dist: keyrings.alt>=4.0.0
+Requires-Dist: rich>=13.0.0
 
 # Ferrum
 

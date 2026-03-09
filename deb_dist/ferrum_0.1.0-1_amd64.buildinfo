@@ -4,15 +4,16 @@ Binary: python3-ferrum
 Architecture: all
 Version: 0.1.0-1
 Checksums-Md5:
- 4c4729bfde9930cd328230a376f05118 20672 python3-ferrum_0.1.0-1_all.deb
+ e2ab8647b286db6ff01f1f7779f4851a 7569672 python3-ferrum_0.1.0-1_all.deb
 Checksums-Sha1:
- 0f553aa5dfaca7828b424fd7b0932e5155495e38 20672 python3-ferrum_0.1.0-1_all.deb
+ 654dfc44890bc32b4e08ac5a6344f11f9ee44fd2 7569672 python3-ferrum_0.1.0-1_all.deb
 Checksums-Sha256:
- ba5d81b082fe7652322454898e3efdf036bbc9de154eedd1d23bdba1ba00ab6b 20672 python3-ferrum_0.1.0-1_all.deb
+ ff483cb948797580f9dce497a02b60846d9139eb908379987d9dcf71718d1025 7569672 python3-ferrum_0.1.0-1_all.deb
 Build-Origin: Debian
 Build-Architecture: amd64
-Build-Date: Mon, 09 Mar 2026 13:56:59 -0700
+Build-Date: Mon, 09 Mar 2026 16:42:07 -0700
 Build-Tainted-By:
+ usr-local-has-libraries
  usr-local-has-programs
 Installed-Build-Depends:
  autoconf (= 2.72-3.1),
@@ -189,4 +190,4 @@ Installed-Build-Depends:
 Environment:
  DEB_BUILD_OPTIONS="parallel=4"
  LANG="en_US.UTF-8"
- SOURCE_DATE_EPOCH="1773089775"
+ SOURCE_DATE_EPOCH="1773099720"
