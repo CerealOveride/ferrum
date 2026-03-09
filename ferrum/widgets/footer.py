@@ -12,7 +12,7 @@ class FerrumFooter(Widget):
 
     DEFAULT_CSS = """
     FerrumFooter {
-        height: 3;
+        height: 4;
         layout: vertical;
         background: $panel;
     }
@@ -24,6 +24,16 @@ class FerrumFooter(Widget):
         color: $text-muted;
     }
 
+    #selection-status {
+        height: 1;
+        background: $panel;
+        padding: 0 1;
+        color: $accent;
+        display: none;
+    }
+    #selection-status.active {
+        display: block;
+    }
     #progress-bar-row {
         height: 2;
         layout: horizontal;
@@ -56,6 +66,7 @@ class FerrumFooter(Widget):
 
     def compose(self) -> ComposeResult:
         yield Label("", id="keybindings")
+        yield Label("", id="selection-status")
         with Horizontal(id="progress-bar-row"):
             yield Label("", id="progress-label")
             yield ProgressBar(total=100, show_eta=False, id="progress-bar")
@@ -81,6 +92,17 @@ class FerrumFooter(Widget):
         ]
         text = "  ".join(f"[bold cyan]{k}[/bold cyan] {v}" for k, v in bindings)
         self.query_one("#keybindings", Label).update(text)
+
+    def update_selection(self, count: int, total: int) -> None:
+        """Show or hide selection count in footer."""
+        label = self.query_one("#selection-status", Label)
+        if count > 0:
+            label.update(f"[bold]{count}[/bold] of {total} selected")
+            label.add_class("active")
+            label.styles.display = "block"
+        else:
+            label.remove_class("active")
+            label.styles.display = "none"
 
     def show_progress(self, op: FileOperation) -> None:
         """Show operation progress in the footer."""

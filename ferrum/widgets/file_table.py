@@ -55,6 +55,12 @@ class FileTable(Widget):
         table.clear()
         self._entries = []
         self._selected = set()
+        try:
+            from ferrum.widgets.footer import FerrumFooter
+            footer = self.app.query_one(FerrumFooter)
+            footer.update_selection(0, 0)
+        except Exception:
+            pass
         for entry in entries:
             if not show_hidden and entry.is_hidden:
                 continue
@@ -97,6 +103,7 @@ class FileTable(Widget):
         else:
             self._selected.add(row)
         self._refresh_rows()
+        self._notify_selection()
 
     def range_select(self, from_row: int, to_row: int) -> None:
         start = min(from_row, to_row)
@@ -104,6 +111,16 @@ class FileTable(Widget):
         for i in range(start, end + 1):
             self._selected.add(i)
         self._refresh_rows()
+        self._notify_selection()
+
+    def _notify_selection(self) -> None:
+        """Update footer with current selection count."""
+        try:
+            from ferrum.widgets.footer import FerrumFooter
+            footer = self.app.query_one(FerrumFooter)
+            footer.update_selection(len(self._selected), len(self._entries))
+        except Exception:
+            pass
 
     @on(DataTable.RowHighlighted)
     def on_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
