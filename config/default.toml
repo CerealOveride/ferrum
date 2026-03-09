@@ -26,9 +26,7 @@ select_all = "ctrl+a"
 search = "ctrl+f"
 
 [bookmarks]
-# Default bookmarks - these will be overridden by user config
-home = "~"
-root = "/"
+
 
 [smb]
 # SMB connections defined here

@@ -6,6 +6,8 @@ from textual.binding import Binding
 
 from ferrum.config import load_config, ensure_config_dir
 from ferrum.widgets.file_pane import FilePane
+from ferrum.widgets.sidebar import Sidebar
+from ferrum.messages import DirectoryRequested
 
 
 class FerrumApp(App):
@@ -29,6 +31,7 @@ class FerrumApp(App):
         Binding("q", "quit", "Quit"),
         Binding("backspace", "navigate_up", "Up"),
         Binding("ctrl+h", "toggle_hidden", "Hidden"),
+        Binding("ctrl+b", "toggle_sidebar", "Sidebar"),
     ]
 
     def __init__(self):
@@ -39,8 +42,16 @@ class FerrumApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with Horizontal(id="pane-container"):
+            yield Sidebar(
+                bookmarks=self.config.bookmarks,
+                smb_connections=self.config.smb_connections,
+            )
             yield FilePane(str(Path.home()))
         yield Footer()
+
+    def on_directory_requested(self, event: DirectoryRequested) -> None:
+        """Handle navigation requests from the sidebar."""
+        self.query_one(FilePane).load_directory(event.path)
 
     def action_navigate_up(self) -> None:
         self.query_one(FilePane).navigate_up()
@@ -49,3 +60,6 @@ class FerrumApp(App):
         pane = self.query_one(FilePane)
         pane.show_hidden = not pane.show_hidden
         pane.load_directory(pane.current_path)
+
+    def action_toggle_sidebar(self) -> None:
+        self.query_one(Sidebar).toggle()
