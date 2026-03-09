@@ -7,7 +7,8 @@ from textual import on, work
 from ferrum.backends.local import LocalBackend
 from ferrum.widgets.file_table import FileTable
 from ferrum.widgets.path_bar import PathBar
-from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError
+from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected
+from ferrum.widgets.preview import PreviewPane
 
 
 class SinglePane(Widget):
@@ -163,3 +164,9 @@ class FilePane(Widget):
         if pane:
             pane._history.append(pane.current_path)
             pane.load_directory(event.path)
+
+    @on(FileSelected)
+    def on_file_selected(self, event: FileSelected) -> None:
+        event.stop()
+        # Forward directly to the app
+        self.app.query_one(PreviewPane).preview(event.path)

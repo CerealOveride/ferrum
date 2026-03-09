@@ -7,7 +7,8 @@ from textual.binding import Binding
 from ferrum.config import load_config, ensure_config_dir
 from ferrum.widgets.file_pane import FilePane
 from ferrum.widgets.sidebar import Sidebar
-from ferrum.messages import DirectoryRequested
+from ferrum.widgets.preview import PreviewPane
+from ferrum.messages import DirectoryRequested, FileSelected
 
 
 class FerrumApp(App):
@@ -34,6 +35,7 @@ class FerrumApp(App):
         Binding("ctrl+b", "toggle_sidebar", "Sidebar"),
         Binding("ctrl+t", "new_tab", "New Tab"),
         Binding("ctrl+w", "close_tab", "Close Tab"),
+        Binding("ctrl+e", "toggle_preview", "Preview"),
     ]
 
     def __init__(self):
@@ -49,10 +51,16 @@ class FerrumApp(App):
                 smb_connections=self.config.smb_connections,
             )
             yield FilePane(str(Path.home()))
+            yield PreviewPane()
         yield Footer()
 
     def on_directory_requested(self, event: DirectoryRequested) -> None:
         self.query_one(FilePane).load_directory(event.path)
+
+    def on_file_selected(self, event: FileSelected) -> None:
+        preview = self.query_one(PreviewPane)
+        preview.preview(event.path)
+        self.notify(f"Preview: {event.path}")
 
     def action_navigate_up(self) -> None:
         self.query_one(FilePane).navigate_up()
@@ -72,3 +80,6 @@ class FerrumApp(App):
 
     def action_close_tab(self) -> None:
         self.query_one(FilePane).close_tab()
+
+    def action_toggle_preview(self) -> None:
+        self.query_one(PreviewPane).toggle()

@@ -3,7 +3,6 @@ from textual.widget import Widget
 from textual.widgets import DataTable
 from textual.app import ComposeResult
 from textual import on
-from textual.coordinate import Coordinate
 
 from ferrum.backends.base import FileEntry
 from ferrum.messages import DirectoryRequested, FileSelected
@@ -74,8 +73,16 @@ class FileTable(Widget):
             return self._entries[table.cursor_row]
         return None
 
+    @on(DataTable.RowHighlighted)
+    def on_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Single click or arrow key — show preview."""
+        entry = self.get_selected_entry()
+        if entry:
+            self.post_message(FileSelected(entry.path))
+
     @on(DataTable.RowSelected)
     def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Double click or Enter — navigate or open."""
         entry = self.get_selected_entry()
         if entry is None:
             return
