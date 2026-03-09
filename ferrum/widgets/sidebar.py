@@ -90,11 +90,51 @@ class Sidebar(Widget):
         data = event.node.data
 
         if "action" in data:
-            self.app.notify(f"Coming soon: {data['action']}")
+            if data["action"] == "add_connection":
+                self.app.run_worker(self._add_smb_connection(), exclusive=True)
+            elif data["action"] == "add_bookmark":
+                self.app.notify("Add bookmark: coming soon")
             return
 
         if "path" in data:
             self.post_message(DirectoryRequested(data["path"]))
+
+    async def _add_smb_connection(self) -> None:
+        """Show dialog to add a new SMB connection."""
+        from ferrum.widgets.dialogs import SMBConnectionDialog
+        from ferrum.backends.smb import SMBConnection, store_credentials
+        from textual import work
+
+        result = await self.app.push_screen_wait(SMBConnectionDialog())
+        if result:
+            # Store credentials in keyring if provided
+            if result["username"] and result["password"]:
+                store_credentials(
+                    result["host"],
+                    result["username"],
+                    result["password"]
+                )
+
+            # Add to sidebar tree
+            tree = self.query_one(Tree)
+            network_node = None
+            for child in tree.root.children:
+                if child.label.plain == "Network":
+                    network_node = child
+                    break
+
+            if network_node:
+                path = f"//{result['host']}/{result['share']}"
+                # Insert before the "+ Add connection" leaf
+                network_node.add_leaf(
+                    f"🌐 {result['name']}",
+                    data={"path": path, "smb": True}
+                )
+
+            # Navigate to the new share
+            path = f"//{result['host']}/{result['share']}"
+            self.post_message(DirectoryRequested(path))
+            self.app.notify(f"Connecting to {result['name']}...")
 
     def toggle(self) -> None:
         """Show or hide the sidebar."""

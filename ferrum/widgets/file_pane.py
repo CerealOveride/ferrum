@@ -5,6 +5,7 @@ from textual.widgets import TabbedContent, TabPane
 from textual import on, work
 
 from ferrum.backends.local import LocalBackend
+from ferrum.backends.router import get_backend_for_path, is_smb_path
 from ferrum.widgets.file_table import FileTable
 from ferrum.widgets.path_bar import PathBar
 from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected
@@ -24,8 +25,11 @@ class SinglePane(Widget):
 
     def __init__(self, initial_path: str, pane_id: str) -> None:
         super().__init__(id=pane_id)
-        self.current_path = str(Path(initial_path).expanduser().resolve())
-        self.backend = LocalBackend()
+        if is_smb_path(initial_path):
+            self.current_path = initial_path
+        else:
+            self.current_path = str(Path(initial_path).expanduser().resolve())
+        self.backend = get_backend_for_path(self.current_path)
         self.show_hidden = False
         self._history: list[str] = []
 
@@ -39,11 +43,16 @@ class SinglePane(Widget):
     @work(exclusive=True)
     async def load_directory(self, path: str) -> None:
         """Load a directory in the background."""
+        previous_path = self.current_path
         try:
+            # Switch backend if path type changed
+            self.backend = get_backend_for_path(path)
             entries = await self.backend.list_dir(path)
             self.current_path = path
             self.post_message(DirectoryLoaded(path, entries))
-        except (PermissionError, FileNotFoundError) as e:
+        except (PermissionError, FileNotFoundError, ConnectionError, OSError, Exception) as e:
+            # Stay on current directory, don't blank the screen
+            self.backend = get_backend_for_path(previous_path)
             self.post_message(DirectoryError(path, str(e)))
 
     @on(DirectoryLoaded)
