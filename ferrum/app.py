@@ -54,6 +54,11 @@ class FerrumApp(App):
         super().__init__()
         ensure_config_dir()
         self.config = load_config()
+
+        # Register config SMB connections with router
+        from ferrum.backends.router import set_config_connections
+        set_config_connections(self.config.smb_connections)
+
         self.ops = OperationsManager(
             on_progress=self._on_op_progress,
             on_complete=self._on_op_complete,

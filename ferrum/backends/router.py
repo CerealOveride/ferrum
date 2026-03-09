@@ -48,6 +48,16 @@ def _find_username_for_host(host: str) -> str | None:
     return None
 
 
+# Global config connections cache — set by app on startup
+_config_connections: list = []
+
+
+def set_config_connections(connections: list) -> None:
+    """Cache SMB connections from config for use by router."""
+    global _config_connections
+    _config_connections = connections
+
+
 def get_backend_for_path(path: str, smb_connections: dict = None) -> FSBackend:
     """Return the appropriate backend for a given path."""
     if is_smb_path(path):
@@ -60,7 +70,24 @@ def get_backend_for_path(path: str, smb_connections: dict = None) -> FSBackend:
                 if conn.host == host and conn.share == share:
                     return SMBBackend(conn)
 
-        # Look up credentials from keyring
+        # Check global config connections
+        for conn in _config_connections:
+            if conn.host == host and conn.share == share:
+                # Build SMBConnection with keyring lookup
+                password = keyring.get_password(
+                    KEYRING_SERVICE, f"{conn.username}@{host}"
+                ) if conn.username else None
+                smb_conn = SMBConnection(
+                    name=conn.name,
+                    host=host,
+                    share=share,
+                    username=conn.username,
+                    password=password or "",
+                    use_keyring=True,
+                )
+                return SMBBackend(smb_conn)
+
+        # Fall back to keyring username discovery
         username = _find_username_for_host(host)
         password = None
         if username:

@@ -115,6 +115,16 @@ class Sidebar(Widget):
                     result["password"]
                 )
 
+            # Save to user config
+            from ferrum.config import save_smb_connection, SMBConnection as ConfigSMBConn
+            config_conn = ConfigSMBConn(
+                name=result["name"],
+                host=result["host"],
+                share=result["share"],
+                username=result["username"],
+            )
+            save_smb_connection(config_conn)
+
             # Add to sidebar tree
             tree = self.query_one(Tree)
             network_node = None
@@ -125,7 +135,6 @@ class Sidebar(Widget):
 
             if network_node:
                 path = f"//{result['host']}/{result['share']}"
-                # Insert before the "+ Add connection" leaf
                 network_node.add_leaf(
                     f"🌐 {result['name']}",
                     data={"path": path, "smb": True}

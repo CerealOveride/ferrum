@@ -112,3 +112,113 @@ def _apply_config(config: Config, data: dict) -> None:
 def ensure_config_dir() -> None:
     """Create user config directory if it doesn't exist."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def save_smb_connection(conn: SMBConnection) -> None:
+    """Save an SMB connection to user config."""
+    ensure_config_dir()
+
+    # Load existing user config or start fresh
+    if USER_CONFIG.exists():
+        with open(USER_CONFIG, "rb") as f:
+            import tomllib
+            data = tomllib.load(f)
+    else:
+        data = {}
+
+    # Ensure smb section exists
+    if "smb" not in data:
+        data["smb"] = {}
+    if "connections" not in data["smb"]:
+        data["smb"]["connections"] = []
+
+    # Check if connection already exists and update, or append
+    existing = data["smb"]["connections"]
+    for i, c in enumerate(existing):
+        if c.get("host") == conn.host and c.get("share") == conn.share:
+            existing[i] = {
+                "name": conn.name,
+                "host": conn.host,
+                "share": conn.share,
+                "username": conn.username,
+            }
+            break
+    else:
+        existing.append({
+            "name": conn.name,
+            "host": conn.host,
+            "share": conn.share,
+            "username": conn.username,
+        })
+
+    _write_config(data)
+
+
+def remove_smb_connection(host: str, share: str) -> None:
+    """Remove an SMB connection from user config."""
+    if not USER_CONFIG.exists():
+        return
+
+    with open(USER_CONFIG, "rb") as f:
+        import tomllib
+        data = tomllib.load(f)
+
+    if "smb" in data and "connections" in data["smb"]:
+        data["smb"]["connections"] = [
+            c for c in data["smb"]["connections"]
+            if not (c.get("host") == host and c.get("share") == share)
+        ]
+
+    _write_config(data)
+
+
+def _write_config(data: dict) -> None:
+    """Write config dict to user config file as TOML."""
+    lines = []
+
+    if "general" in data:
+        lines.append("[general]")
+        for k, v in data["general"].items():
+            lines.append(f"{k} = {_toml_value(v)}")
+        lines.append("")
+
+    if "appearance" in data:
+        lines.append("[appearance]")
+        for k, v in data["appearance"].items():
+            lines.append(f"{k} = {_toml_value(v)}")
+        lines.append("")
+
+    if "keybindings" in data:
+        lines.append("[keybindings]")
+        for k, v in data["keybindings"].items():
+            lines.append(f"{k} = {_toml_value(v)}")
+        lines.append("")
+
+    if "bookmarks" in data:
+        lines.append("[bookmarks]")
+        for k, v in data["bookmarks"].items():
+            lines.append(f"{k} = {_toml_value(v)}")
+        lines.append("")
+
+    if "smb" in data and "connections" in data["smb"]:
+        for conn in data["smb"]["connections"]:
+            lines.append("[[smb.connections]]")
+            for k, v in conn.items():
+                lines.append(f"{k} = {_toml_value(v)}")
+            lines.append("")
+
+    with open(USER_CONFIG, "w") as f:
+        f.write("\n".join(lines))
+
+
+def _toml_value(v) -> str:
+    """Convert a Python value to a TOML value string."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    elif isinstance(v, str):
+        return f'"{v}"'
+    elif isinstance(v, int):
+        return str(v)
+    elif isinstance(v, float):
+        return str(v)
+    return f'"{v}"' 
