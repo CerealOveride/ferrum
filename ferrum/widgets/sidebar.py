@@ -196,7 +196,8 @@ class Sidebar(Widget):
 
         if bookmarks_node:
             # Insert before the "+ Add bookmark" leaf
-            bookmarks_node.add_leaf(f"📌 {name}", data={"path": current_path})
+            bm_node = bookmarks_node.add(f"📌 {name}", data={"path": current_path, "bookmark": name})
+            bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
 
         self.app.notify(f"Bookmarked: {name}")
 
@@ -259,7 +260,8 @@ class Sidebar(Widget):
 
         if bookmarks_node:
             # Insert before the "+ Add bookmark" leaf
-            bookmarks_node.add_leaf(f"📌 {name}", data={"path": current_path})
+            bm_node = bookmarks_node.add(f"📌 {name}", data={"path": current_path, "bookmark": name})
+            bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
 
         self.app.notify(f"Bookmarked: {name}")
 
