@@ -10,7 +10,7 @@ from ferrum.widgets.file_pane import FilePane
 from ferrum.widgets.sidebar import Sidebar
 from ferrum.widgets.preview import PreviewPane
 from ferrum.widgets.footer import FerrumFooter
-from ferrum.widgets.dialogs import ConflictDialog, ConfirmDialog
+from ferrum.widgets.dialogs import ConflictDialog, ConfirmDialog, InputDialog
 from ferrum.messages import DirectoryRequested, FileSelected
 from ferrum.operations.manager import OperationsManager
 from ferrum.operations.types import ConflictResolution
@@ -192,12 +192,29 @@ class FerrumApp(App):
         if confirmed:
             await self.ops.delete(paths)
 
+    @work
     async def action_rename_file(self) -> None:
         paths = self._get_selected_paths()
         if not paths or len(paths) > 1:
             self.notify("Select a single file to rename", severity="warning")
             return
-        self.notify("Rename coming soon - F2")
+        src = paths[0]
+        src_path = Path(src)
+        new_name = await self.push_screen_wait(
+            InputDialog("Rename", placeholder="New name", initial=src_path.name)
+        )
+        if new_name and new_name != src_path.name:
+            dst = str(src_path.parent / new_name)
+            await self.ops.rename(src, dst)
+            self._refresh_current()
 
+    @work
     async def action_mkdir(self) -> None:
-        self.notify("New directory coming soon - F5")
+        current = self._get_current_dir()
+        name = await self.push_screen_wait(
+            InputDialog("New Directory", placeholder="Directory name")
+        )
+        if name:
+            dst = str(Path(current) / name)
+            await self.ops.mkdir(dst)
+            self._refresh_current()

@@ -125,3 +125,80 @@ class ConfirmDialog(ModalScreen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "confirm")
+
+
+class InputDialog(ModalScreen):
+    """Generic single input dialog."""
+
+    DEFAULT_CSS = """
+    InputDialog {
+        align: center middle;
+    }
+
+    #dialog {
+        width: 60;
+        height: auto;
+        border: solid $primary;
+        background: $surface;
+        padding: 1 2;
+    }
+
+    #dialog-title {
+        text-style: bold;
+        color: $text;
+        margin-bottom: 1;
+    }
+
+    #dialog-input {
+        margin-bottom: 1;
+    }
+
+    #dialog-buttons {
+        layout: horizontal;
+        height: auto;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(self, title: str, placeholder: str = "", initial: str = "") -> None:
+        super().__init__()
+        self._title = title
+        self._placeholder = placeholder
+        self._initial = initial
+
+    def compose(self) -> ComposeResult:
+        from textual.widgets import Input
+        with Vertical(id="dialog"):
+            yield Label(self._title, id="dialog-title")
+            yield Input(
+                value=self._initial,
+                placeholder=self._placeholder,
+                id="dialog-input"
+            )
+            with Horizontal(id="dialog-buttons"):
+                yield Button("Cancel", id="cancel", variant="default")
+                yield Button("OK", id="ok", variant="primary")
+
+    def on_mount(self) -> None:
+        self.query_one("#dialog-input").focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "ok":
+            from textual.widgets import Input
+            value = self.query_one("#dialog-input", Input).value.strip()
+            self.dismiss(value if value else None)
+        else:
+            self.dismiss(None)
+
+    def on_key(self, event) -> None:
+        if event.key == "enter":
+            from textual.widgets import Input
+            value = self.query_one("#dialog-input", Input).value.strip()
+            self.dismiss(value if value else None)
+        elif event.key == "escape":
+            self.dismiss(None)
