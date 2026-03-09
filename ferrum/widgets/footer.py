@@ -89,6 +89,7 @@ class FerrumFooter(Widget):
             ("^v", "Paste"),
             ("Del", "Trash"),
             ("F2", "Rename"),
+            ("^f", "Search"),
         ]
         text = "  ".join(f"[bold cyan]{k}[/bold cyan] {v}" for k, v in bindings)
         self.query_one("#keybindings", Label).update(text)

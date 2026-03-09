@@ -1,6 +1,6 @@
 from datetime import datetime
 from textual.widget import Widget
-from textual.widgets import DataTable
+from textual.widgets import DataTable, Input
 from textual.app import ComposeResult
 from textual import on
 from textual.events import Click
@@ -47,8 +47,11 @@ class FileTable(Widget):
         self._sort_reverse: bool = False
         self._all_entries: list = []  # unfiltered, unsorted master list
         self._last_click_row: int | None = None
+        self._search_query: str = ""
+        self._search_visible: bool = False
 
     def compose(self) -> ComposeResult:
+        yield Input(placeholder="Search...", id="search-bar")
         table = DataTable(cursor_type="row")
         table.add_columns("Name", "Size", "Modified")
         yield table
@@ -77,7 +80,10 @@ class FileTable(Widget):
             pass
 
         show_hidden = getattr(self, "_show_hidden", False)
+        query = getattr(self, "_search_query", "")
         visible = [e for e in self._all_entries if show_hidden or not e.is_hidden]
+        if query:
+            visible = [e for e in visible if query in e.name.lower()]
 
         # Always sort dirs first, then apply column sort
         col = self._sort_column
@@ -165,6 +171,35 @@ class FileTable(Widget):
             self._selected.add(i)
         self._refresh_rows()
         self._notify_selection()
+
+    def show_search(self) -> None:
+        """Show the search bar and focus it."""
+        bar = self.query_one("#search-bar", Input)
+        self._search_visible = True
+        bar.add_class("visible")
+        bar.styles.display = "block"
+        bar.focus()
+
+    def hide_search(self) -> None:
+        """Hide the search bar and clear the filter."""
+        bar = self.query_one("#search-bar", Input)
+        bar.value = ""
+        self._search_query = ""
+        self._search_visible = False
+        bar.remove_class("visible")
+        bar.styles.display = "none"
+        self._apply_sort()
+        self.query_one(DataTable).focus()
+
+    @on(Input.Changed, "#search-bar")
+    def on_search_changed(self, event: Input.Changed) -> None:
+        self._search_query = event.value.lower()
+        self._apply_sort()
+
+    @on(Input.Submitted, "#search-bar")
+    def on_search_submitted(self, event: Input.Submitted) -> None:
+        """Enter in search bar moves focus to table."""
+        self.query_one(DataTable).focus()
 
     def _notify_selection(self) -> None:
         """Update footer with current selection count."""
