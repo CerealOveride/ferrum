@@ -1,0 +1,18 @@
+[project]
+name = "ferrum"
+version = "0.1.0"
+description = "A fast, stable, DE-agnostic TUI file manager"
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.47.0",
+    "aiofiles>=23.0.0",
+    "smbprotocol>=1.12.0",
+]
+
+[project.scripts]
+fe = "ferrum.main:run"
+ferrum = "ferrum.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,40 @@
+[general]
+show_hidden = false
+confirm_delete = true
+show_preview = false
+sidebar_visible = true
+
+[appearance]
+theme = "dark"
+show_icons = true
+date_format = "%Y-%m-%d %H:%M"
+
+[keybindings]
+quit = "q"
+toggle_hidden = "ctrl+h"
+toggle_preview = "ctrl+p"
+toggle_sidebar = "ctrl+b"
+new_tab = "ctrl+t"
+close_tab = "ctrl+w"
+navigate_up = "backspace"
+delete = "delete"
+rename = "f2"
+copy = "ctrl+c"
+paste = "ctrl+v"
+cut = "ctrl+x"
+select_all = "ctrl+a"
+search = "ctrl+f"
+
+[bookmarks]
+# Default bookmarks - these will be overridden by user config
+home = "~"
+root = "/"
+
+[smb]
+# SMB connections defined here
+# [[smb.connections]]
+# name = "My NAS"
+# host = "192.168.1.100"
+# share = "media"
+# username = ""
+# password = ""
