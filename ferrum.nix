@@ -15,6 +15,7 @@ python3Packages.buildPythonApplication {
 
   nativeBuildInputs = with python3Packages; [
     hatchling
+    setuptools
   ];
 
   propagatedBuildInputs = with python3Packages; [
