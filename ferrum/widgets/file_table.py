@@ -227,7 +227,7 @@ class FileTable(Widget):
         if entry.is_dir:
             self.post_message(DirectoryRequested(entry.path))
         else:
-            self.post_message(FileSelected(entry.path))
+            self.post_message(FileOpened(entry.path))
 
     def on_key(self, event) -> None:
         if event.key == "space":
