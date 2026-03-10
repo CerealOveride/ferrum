@@ -25,3 +25,12 @@ See ferrum.nix
 
 ## Usage
 fe
+
+## Hyprland / Bare Wayland Compositor Users
+
+The `.desktop` file uses `Terminal=true` which works with most desktop environments (GNOME, KDE, XFCE). If you're using Hyprland or another bare Wayland compositor that doesn't have a default terminal association, you may need to edit the desktop entry to explicitly specify your terminal emulator:
+```
+Exec=kitty fe
+```
+
+Replace `kitty` with your preferred terminal (`foot`, `alacritty`, `wezterm`, etc.).
