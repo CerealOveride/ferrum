@@ -36,6 +36,9 @@ class FileTable(Widget):
         height: 1fr;
         width: 1fr;
     }
+    #search-bar {
+        display: none;
+    }
     """
 
     def __init__(self, date_format: str = "%Y-%m-%d %H:%M") -> None:
