@@ -7,8 +7,8 @@ python3Packages.buildPythonApplication {
   src = fetchFromGitHub {
     owner = "CerealOveride";
     repo = "ferrum";
-    rev = "0e95ce40bdc08d48815b7d8865065792f4b8bb3c";
-    sha256 = "19qqblf504h6b22ssgyn2saswvfjlzjjna0ppajzwn5ksl38sprh";
+    rev = "ac5149d3e90d5ae8f71af9af177e038cf0501ffc";
+    sha256 = "1pz0ypjzxq1h3q0z306iv7mc6xvrv72jafxdkr3a0brw1hyhscrq";
   };
 
   format = "pyproject";
