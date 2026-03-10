@@ -1,5 +1,7 @@
 import asyncio
 import keyring
+from keyrings.alt.file import PlaintextKeyring
+keyring.set_keyring(PlaintextKeyring())
 from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Optional
