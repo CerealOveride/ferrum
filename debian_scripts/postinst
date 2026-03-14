@@ -8,6 +8,7 @@ if [ -d "$WHEELS_DIR" ]; then
         --no-index \
         --find-links="$WHEELS_DIR" \
         --quiet \
+        --break-system-packages \
         smbprotocol pyspnego textual aiofiles send2trash \
         keyring keyrings.alt rich cryptography \
         2>/dev/null || true
