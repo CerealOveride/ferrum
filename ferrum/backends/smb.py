@@ -89,6 +89,14 @@ class SMBConnection:
     def connect(self) -> None:
         """Register connection with smbclient."""
         try:
+            # Clear any existing session (e.g. a stale guest session) before
+            # registering a new one, otherwise smbprotocol may reuse the old
+            # session and raise STATUS_USER_SESSION_DELETED.
+            try:
+                smbclient.delete_session(self.host)
+            except Exception:
+                pass
+
             kwargs = {
                 "username": self.username or None,
                 "password": self.password or None,
