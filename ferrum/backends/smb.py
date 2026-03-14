@@ -100,6 +100,11 @@ class SMBConnection:
         except SMBAuthenticationError as e:
             raise PermissionError(f"SMB auth failed for {self.host}: {e}")
         except SMBException as e:
+            # When a guest session is established but the server requires signing/encryption,
+            # smbprotocol raises a plain SMBException (not SMBAuthenticationError).
+            # Treat this as an auth failure so the credential dialog is shown.
+            if "guest" in str(e).lower() and ("signing" in str(e).lower() or "encryption" in str(e).lower()):
+                raise PermissionError(f"SMB auth failed for {self.host}: {e}")
             raise ConnectionError(f"SMB connection failed for {self.host}: {e}")
 
     def disconnect(self) -> None:
