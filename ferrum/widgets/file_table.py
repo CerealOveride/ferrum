@@ -9,6 +9,18 @@ from ferrum.backends.base import FileEntry
 from ferrum.messages import DirectoryRequested, FileSelected, FileOpened
 
 
+class ShiftAwareDataTable(DataTable):
+    """DataTable subclass that records whether Shift was held on the last click."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.shift_held: bool = False
+
+    async def _on_click(self, event: Click) -> None:
+        self.shift_held = event.shift
+        await super()._on_click(event)
+
+
 def format_size(size: int, is_dir: bool) -> str:
     if is_dir:
         return "<DIR>"
@@ -55,7 +67,7 @@ class FileTable(Widget):
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="Search...", id="search-bar")
-        table = DataTable(cursor_type="row")
+        table = ShiftAwareDataTable(cursor_type="row")
         table.add_columns("Name", "Size", "Modified")
         yield table
 
@@ -65,7 +77,8 @@ class FileTable(Widget):
         self._apply_sort()
 
     def _apply_sort(self) -> None:
-        table = self.query_one(DataTable)
+        self._last_click_row = None
+        table = self.query_one(ShiftAwareDataTable)
         table.clear(columns=True)
         # Rebuild columns with sort indicator on active column
         for name in ("Name", "Size", "Modified"):
@@ -121,7 +134,7 @@ class FileTable(Widget):
             self._sort_reverse = False
         self._apply_sort()
         # Update column headers to show sort indicator
-        table = self.query_one(DataTable)
+        table = self.query_one(ShiftAwareDataTable)
         for col in table.columns.values():
             label = str(col.label).strip().rstrip("▲▼").strip()
             if label == col_label:
@@ -130,7 +143,7 @@ class FileTable(Widget):
                 col.label = label
 
     def _add_row(self, idx: int) -> None:
-        table = self.query_one(DataTable)
+        table = self.query_one(ShiftAwareDataTable)
         entry = self._entries[idx]
         icon = "📁 " if entry.is_dir else "📄 "
         mark = "● " if idx in self._selected else "  "
@@ -142,7 +155,7 @@ class FileTable(Widget):
         table.add_row(name, size, modified)
 
     def _refresh_rows(self) -> None:
-        table = self.query_one(DataTable)
+        table = self.query_one(ShiftAwareDataTable)
         current_row = table.cursor_row
         table.clear()
         for i in range(len(self._entries)):
@@ -151,7 +164,7 @@ class FileTable(Widget):
             table.move_cursor(row=current_row)
 
     def get_selected_entry(self) -> FileEntry | None:
-        table = self.query_one(DataTable)
+        table = self.query_one(ShiftAwareDataTable)
         if table.cursor_row < len(self._entries):
             return self._entries[table.cursor_row]
         return None
@@ -192,7 +205,7 @@ class FileTable(Widget):
         bar.remove_class("visible")
         bar.styles.display = "none"
         self._apply_sort()
-        self.query_one(DataTable).focus()
+        self.query_one(ShiftAwareDataTable).focus()
 
     @on(Input.Changed, "#search-bar")
     def on_search_changed(self, event: Input.Changed) -> None:
@@ -202,7 +215,7 @@ class FileTable(Widget):
     @on(Input.Submitted, "#search-bar")
     def on_search_submitted(self, event: Input.Submitted) -> None:
         """Enter in search bar moves focus to table."""
-        self.query_one(DataTable).focus()
+        self.query_one(ShiftAwareDataTable).focus()
 
     def _notify_selection(self) -> None:
         """Update footer with current selection count."""
@@ -221,6 +234,13 @@ class FileTable(Widget):
 
     @on(DataTable.RowSelected)
     def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        table = self.query_one(ShiftAwareDataTable)
+        current_row = table.cursor_row
+        if table.shift_held and self._last_click_row is not None:
+            self.range_select(self._last_click_row, current_row)
+            self._last_click_row = current_row
+            return
+        self._last_click_row = current_row
         entry = self.get_selected_entry()
         if entry is None:
             return
@@ -231,13 +251,6 @@ class FileTable(Widget):
 
     def on_key(self, event) -> None:
         if event.key == "space":
-            table = self.query_one(DataTable)
+            table = self.query_one(ShiftAwareDataTable)
             self.toggle_selection(table.cursor_row)
             event.stop()
-
-    def on_click(self, event: Click) -> None:
-        table = self.query_one(DataTable)
-        current_row = table.cursor_row
-        if event.shift and self._last_click_row is not None:
-            self.range_select(self._last_click_row, current_row)
-        self._last_click_row = current_row
