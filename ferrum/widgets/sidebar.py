@@ -216,55 +216,6 @@ class Sidebar(Widget):
                 node.remove()
             self.app.notify(f"Removed bookmark: {name}")
 
-    async def _add_bookmark(self) -> None:
-        """Add current directory as a bookmark."""
-        from ferrum.widgets.dialogs import InputDialog
-
-        # Get current path from the active pane
-        try:
-            from ferrum.widgets.file_pane import FilePane
-            pane = self.app.query_one(FilePane)
-            current_path = pane.get_active_pane().current_path
-        except Exception:
-            self.app.notify("Cannot determine current directory", severity="error")
-            return
-
-        from pathlib import Path, PurePosixPath
-        from ferrum.backends.router import is_smb_path
-        if is_smb_path(current_path):
-            default_name = PurePosixPath(current_path).name or current_path
-        else:
-            default_name = Path(current_path).name or current_path
-
-        result = await self.app.push_screen_wait(
-            InputDialog(title="Add Bookmark", placeholder="Bookmark name", initial=default_name)
-        )
-        if not result:
-            return
-
-        name = result.strip()
-        if not name:
-            return
-
-        # Save to config
-        from ferrum.config import save_bookmark
-        save_bookmark(name, current_path)
-
-        # Add to sidebar tree
-        tree = self.query_one(Tree)
-        bookmarks_node = None
-        for child in tree.root.children:
-            if child.label.plain == "Bookmarks":
-                bookmarks_node = child
-                break
-
-        if bookmarks_node:
-            # Insert before the "+ Add bookmark" leaf
-            bm_node = bookmarks_node.add(f"📌 {name}", data={"path": current_path, "bookmark": name})
-            bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
-
-        self.app.notify(f"Bookmarked: {name}")
-
     def toggle(self) -> None:
         """Show or hide the sidebar."""
         self.toggle_class("hidden")

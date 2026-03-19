@@ -1,17 +1,18 @@
+import sys
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Header
 from textual.containers import Horizontal
 from textual.binding import Binding
-from textual import work
+from textual import on, work
 
 from ferrum.config import load_config, ensure_config_dir
 from ferrum.widgets.file_pane import FilePane
 from ferrum.widgets.sidebar import Sidebar
 from ferrum.widgets.preview import PreviewPane
 from ferrum.widgets.footer import FerrumFooter
-from ferrum.widgets.dialogs import ConflictDialog, ConfirmDialog, InputDialog
-from ferrum.messages import DirectoryRequested, FileSelected, FileOpened
+from ferrum.widgets.dialogs import ConflictDialog, ConfirmDialog, InputDialog, CredentialDialog
+from ferrum.messages import DirectoryRequested, FileSelected, FileOpened, SMBAuthRequired
 from ferrum.operations.manager import OperationsManager
 from ferrum.operations.types import ConflictResolution
 
@@ -136,6 +137,36 @@ class FerrumApp(App):
         filename = Path(dst_path).name
         result = await self.push_screen_wait(ConflictDialog(filename))
         return result
+
+    @on(SMBAuthRequired)
+    @work
+    async def on_smb_auth_required(self, event: SMBAuthRequired) -> None:
+        from ferrum.backends.smb import SMBBackend, store_credentials
+        result = await self.push_screen_wait(CredentialDialog(event.host, event.share))
+        if result is None:
+            return
+
+        pane = self._get_active_pane()
+
+        if pane and isinstance(pane.backend, SMBBackend):
+            conn = pane.backend.connection
+            conn.username = result["username"]
+            conn._password = result["password"]
+            conn._connected = False
+
+        if result["username"]:
+            store_credentials(event.host, result["username"], result["password"])
+
+        # Update _config_connections so the next get_backend_for_path call uses
+        # the new username as the keyring key (the old username would miss the lookup).
+        from ferrum.backends.router import _config_connections
+        for conn in _config_connections:
+            if conn.host == event.host and conn.share == event.share:
+                conn.username = result["username"]
+                break
+
+        if pane:
+            pane.load_directory(event.path)
 
     def action_navigate_up(self) -> None:
         self.query_one(FilePane).navigate_up()

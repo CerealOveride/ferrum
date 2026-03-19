@@ -103,6 +103,9 @@ class SMBConnection:
             }
             # Remove None values for guest connections
             kwargs = {k: v for k, v in kwargs.items() if v is not None}
+            # Force NTLM to avoid Kerberos negotiation falling back to guest on
+            # servers with no domain controller (most NAS devices).
+            kwargs["auth_protocol"] = "ntlm"
             smbclient.register_session(self.host, **kwargs)
             self._connected = True
         except SMBAuthenticationError as e:

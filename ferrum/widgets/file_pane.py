@@ -8,7 +8,7 @@ from ferrum.backends.local import LocalBackend
 from ferrum.backends.router import get_backend_for_path, is_smb_path
 from ferrum.widgets.file_table import FileTable
 from ferrum.widgets.path_bar import PathBar
-from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected, FileOpened
+from ferrum.messages import DirectoryRequested, DirectoryLoaded, DirectoryError, FileSelected, FileOpened, SMBAuthRequired
 from ferrum.widgets.preview import PreviewPane
 
 
@@ -45,13 +45,19 @@ class SinglePane(Widget):
         """Load a directory in the background."""
         previous_path = self.current_path
         try:
-            # Switch backend if path type changed
             self.backend = get_backend_for_path(path)
             entries = await self.backend.list_dir(path)
             self.current_path = path
             self.post_message(DirectoryLoaded(path, entries))
-        except (PermissionError, FileNotFoundError, ConnectionError, OSError, Exception) as e:
-            # Stay on current directory, don't blank the screen
+        except PermissionError:
+            self.backend = get_backend_for_path(previous_path)
+            if is_smb_path(path):
+                from ferrum.backends.smb import parse_smb_url
+                host, share, _ = parse_smb_url(path)
+                self.post_message(SMBAuthRequired(host, share, path))
+            else:
+                self.post_message(DirectoryError(path, "Permission denied"))
+        except (FileNotFoundError, ConnectionError, OSError, Exception) as e:
             self.backend = get_backend_for_path(previous_path)
             self.post_message(DirectoryError(path, str(e)))
 
