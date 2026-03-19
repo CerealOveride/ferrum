@@ -46,8 +46,8 @@ class Sidebar(Widget):
         super().__init__()
         self.bookmarks = bookmarks or {}
         self._shift_held = False
-        self._shift_held = False
         self.smb_connections = smb_connections or []
+        self._highlighted_node = None
 
     def compose(self) -> ComposeResult:
         tree = Tree("📂 Ferrum")
@@ -80,9 +80,32 @@ class Sidebar(Widget):
         for conn in self.smb_connections:
             network.add_leaf(
                 f"🌐 {conn.name}",
-                data={"path": f"//{conn.host}/{conn.share}", "smb": True}
+                data={
+                    "path": f"//{conn.host}/{conn.share}",
+                    "smb": True,
+                    "smb_name": conn.name,
+                    "smb_host": conn.host,
+                    "smb_share": conn.share,
+                    "smb_username": conn.username,
+                }
             )
         network.add_leaf("+ Add connection", data={"action": "add_connection"})
+
+    def on_tree_node_highlighted(self, event: Tree.NodeHighlighted) -> None:
+        """Track the currently highlighted node for key handling."""
+        self._highlighted_node = event.node
+
+    def on_key(self, event) -> None:
+        """Handle Delete key to remove a highlighted network share."""
+        if event.key != "delete":
+            return
+        node = self._highlighted_node
+        if node is None or node.data is None:
+            return
+        data = node.data
+        if data.get("smb") and "smb_host" in data:
+            event.stop()
+            self.app.run_worker(self._remove_smb_connection(node), exclusive=True)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         """Handle sidebar item selection."""
@@ -144,7 +167,14 @@ class Sidebar(Widget):
                 path = f"//{result['host']}/{result['share']}"
                 network_node.add_leaf(
                     f"🌐 {result['name']}",
-                    data={"path": path, "smb": True}
+                    data={
+                        "path": path,
+                        "smb": True,
+                        "smb_name": result["name"],
+                        "smb_host": result["host"],
+                        "smb_share": result["share"],
+                        "smb_username": result["username"],
+                    }
                 )
 
             # Navigate to the new share
@@ -200,6 +230,46 @@ class Sidebar(Widget):
             bm_node.add_leaf("  ✕ Remove", data={"action": "remove_bookmark", "bookmark": name})
 
         self.app.notify(f"Bookmarked: {name}")
+
+    async def _remove_smb_connection(self, node) -> None:
+        """Remove a saved SMB network share after confirmation."""
+        from ferrum.widgets.dialogs import RemoveSMBDialog
+        data = node.data
+        smb_name = data.get("smb_name", "")
+        smb_host = data.get("smb_host", "")
+        smb_share = data.get("smb_share", "")
+        smb_username = data.get("smb_username", "")
+
+        # Check whether credentials are stored
+        from ferrum.backends.smb import get_credentials
+        has_creds = bool(smb_username and get_credentials(smb_host, smb_username))
+
+        result = await self.app.push_screen_wait(
+            RemoveSMBDialog(smb_name, smb_host, smb_share, has_creds)
+        )
+        if not result or not result.get("confirm"):
+            return
+
+        # Remove from config
+        from ferrum.config import remove_smb_connection
+        remove_smb_connection(smb_host, smb_share)
+
+        # Optionally clear keyring credentials
+        if result.get("clear_credentials") and smb_username:
+            from ferrum.backends.smb import delete_credentials
+            delete_credentials(smb_host, smb_username)
+
+        # Remove from router's live connection list
+        from ferrum.backends.router import _config_connections
+        for i, conn in enumerate(_config_connections):
+            if conn.host == smb_host and conn.share == smb_share:
+                _config_connections.pop(i)
+                break
+
+        # Remove node from tree
+        node.remove()
+        self._highlighted_node = None
+        self.app.notify(f"Removed {smb_name}")
 
     async def _remove_bookmark(self, node, name: str = "") -> None:
         """Remove a bookmark after confirmation."""

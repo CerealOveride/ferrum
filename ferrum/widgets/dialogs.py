@@ -289,3 +289,164 @@ class SMBConnectionDialog(ModalScreen):
     def on_key(self, event) -> None:
         if event.key == "escape":
             self.dismiss(None)
+
+
+class RemoveSMBDialog(ModalScreen):
+    """Confirmation dialog for removing a saved SMB network share."""
+
+    DEFAULT_CSS = """
+    RemoveSMBDialog {
+        align: center middle;
+    }
+
+    #dialog {
+        width: 64;
+        height: auto;
+        border: solid $error;
+        background: $surface;
+        padding: 1 2;
+    }
+
+    #dialog-title {
+        text-style: bold;
+        color: $error;
+        margin-bottom: 1;
+    }
+
+    #dialog-message {
+        color: $text-muted;
+        margin-bottom: 1;
+    }
+
+    #dialog-checkbox {
+        margin-bottom: 1;
+    }
+
+    #dialog-buttons {
+        layout: horizontal;
+        height: auto;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(self, name: str, host: str, share: str, has_credentials: bool) -> None:
+        super().__init__()
+        self._name = name
+        self._host = host
+        self._share = share
+        self._has_credentials = has_credentials
+
+    def compose(self) -> ComposeResult:
+        from textual.widgets import Checkbox
+        with Vertical(id="dialog"):
+            yield Label("Remove Network Share", id="dialog-title")
+            yield Label(
+                f"Remove '{self._name}' ({self._host}/{self._share})?",
+                id="dialog-message"
+            )
+            if self._has_credentials:
+                yield Checkbox("Also clear saved credentials", id="dialog-checkbox")
+            with Horizontal(id="dialog-buttons"):
+                yield Button("Cancel", id="cancel", variant="default")
+                yield Button("Remove", id="confirm", variant="error")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "confirm":
+            clear_creds = False
+            if self._has_credentials:
+                from textual.widgets import Checkbox
+                try:
+                    clear_creds = self.query_one("#dialog-checkbox", Checkbox).value
+                except Exception:
+                    pass
+            self.dismiss({"confirm": True, "clear_credentials": clear_creds})
+        else:
+            self.dismiss(None)
+
+    def on_key(self, event) -> None:
+        if event.key == "escape":
+            self.dismiss(None)
+
+
+class CredentialDialog(ModalScreen):
+    """Prompt for SMB credentials when authentication fails."""
+
+    DEFAULT_CSS = """
+    CredentialDialog {
+        align: center middle;
+    }
+
+    #dialog {
+        width: 60;
+        height: auto;
+        border: solid $warning;
+        background: $surface;
+        padding: 1 2;
+    }
+
+    #dialog-title {
+        text-style: bold;
+        color: $warning;
+        margin-bottom: 1;
+    }
+
+    #dialog-host {
+        color: $text-muted;
+        margin-bottom: 1;
+    }
+
+    .field-label {
+        color: $text-muted;
+        margin-top: 1;
+    }
+
+    #dialog-buttons {
+        layout: horizontal;
+        height: auto;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(self, host: str, share: str) -> None:
+        super().__init__()
+        self._host = host
+        self._share = share
+
+    def compose(self) -> ComposeResult:
+        from textual.widgets import Input
+        with Vertical(id="dialog"):
+            yield Label("Authentication Required", id="dialog-title")
+            yield Label(f"{self._host}/{self._share}", id="dialog-host")
+            yield Label("Username", classes="field-label")
+            yield Input(placeholder="username", id="input-username")
+            yield Label("Password", classes="field-label")
+            yield Input(placeholder="password", password=True, id="input-password")
+            with Horizontal(id="dialog-buttons"):
+                yield Button("Cancel", id="cancel", variant="default")
+                yield Button("Connect", id="connect", variant="primary")
+
+    def on_mount(self) -> None:
+        self.query_one("#input-username").focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        from textual.widgets import Input
+        if event.button.id == "connect":
+            username = self.query_one("#input-username", Input).value.strip()
+            password = self.query_one("#input-password", Input).value
+            self.dismiss({"username": username, "password": password})
+        else:
+            self.dismiss(None)
+
+    def on_key(self, event) -> None:
+        if event.key == "escape":
+            self.dismiss(None)
