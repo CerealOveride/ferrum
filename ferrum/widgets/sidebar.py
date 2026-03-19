@@ -48,12 +48,64 @@ class Sidebar(Widget):
         self._shift_held = False
         self.smb_connections = smb_connections or []
         self._highlighted_node = None
+        self._devices_node = None
+        self._device_nodes: dict[str, object] = {}  # obj_path → TreeNode
+        self._monitor = None
 
     def compose(self) -> ComposeResult:
         tree = Tree("📂 Ferrum")
         tree.root.expand()
         self._build_tree(tree)
         yield tree
+
+    def on_mount(self) -> None:
+        """Start the device monitor after the widget is mounted."""
+        self.app.run_worker(self._start_device_monitor(), exclusive=False)
+
+    def on_unmount(self) -> None:
+        """Stop the device monitor when the sidebar is removed."""
+        if self._monitor is not None:
+            self._monitor.stop()
+
+    async def _start_device_monitor(self) -> None:
+        """Fetch initial devices and start the hot-plug signal watcher."""
+        from ferrum.devices import DeviceMonitor
+        self._monitor = DeviceMonitor(
+            on_added=self._on_device_added,
+            on_removed=self._on_device_removed,
+        )
+        try:
+            entries = await self._monitor.get_initial()
+            for entry in entries:
+                self._add_device_node(entry)
+        except Exception:
+            pass  # D-Bus unavailable — Devices section stays empty
+        self._monitor.start()
+
+    def _on_device_added(self, entry) -> None:
+        """Called from the DeviceMonitor asyncio task when a device appears."""
+        self.call_later(self._add_device_node, entry)
+
+    def _on_device_removed(self, obj_path: str) -> None:
+        """Called from the DeviceMonitor asyncio task when a device disappears."""
+        self.call_later(self._remove_device_node, obj_path)
+
+    def _add_device_node(self, entry) -> None:
+        if self._devices_node is None:
+            return
+        if entry.obj_path in self._device_nodes:
+            return  # already shown
+        icon = "💾" if entry.removable else "💿"
+        node = self._devices_node.add_leaf(
+            f"{icon} {entry.label}",
+            data={"path": entry.mount_point},
+        )
+        self._device_nodes[entry.obj_path] = node
+
+    def _remove_device_node(self, obj_path: str) -> None:
+        node = self._device_nodes.pop(obj_path, None)
+        if node is not None:
+            node.remove()
 
     def _build_tree(self, tree: Tree) -> None:
         """Build the sidebar tree structure."""
@@ -62,6 +114,9 @@ class Sidebar(Widget):
         for label, path in PLACES:
             if Path(path).exists():
                 places.add_leaf(label, data={"path": path})
+
+        # Devices section (populated asynchronously via DeviceMonitor)
+        self._devices_node = tree.root.add("Devices", expand=True)
 
         # Bookmarks section
         bookmarks = tree.root.add("Bookmarks", expand=True)
