@@ -320,13 +320,11 @@ class OperationsManager:
                 p.unlink()
 
     async def _execute_delete(self, op: FileOperation) -> None:
+        from ferrum.backends.router import get_backend_for_path, is_smb_path
         for i, src in enumerate(op.sources):
-            src_path = Path(src)
-            op.current_file = src_path.name
-            if src_path.is_dir():
-                shutil.rmtree(str(src_path))
-            else:
-                src_path.unlink()
+            op.current_file = Path(src).name if not is_smb_path(src) else src.rstrip("/").split("/")[-1]
+            backend = get_backend_for_path(src)
+            await backend.delete(src)
             op.completed_files = i + 1
             op.progress = op.completed_files / op.total_files
             if self.on_progress:
@@ -334,45 +332,12 @@ class OperationsManager:
             await asyncio.sleep(0)
 
     async def _execute_trash(self, op: FileOperation) -> None:
-        """Move files to XDG trash."""
-        try:
-            import send2trash
-            for i, src in enumerate(op.sources):
-                src_path = Path(src)
-                op.current_file = src_path.name
-                send2trash.send2trash(str(src_path))
-                op.completed_files = i + 1
-                op.progress = op.completed_files / op.total_files
-                if self.on_progress:
-                    await self.on_progress(op)
-                await asyncio.sleep(0)
-        except ImportError:
-            # Fall back to manual XDG trash
-            await self._execute_trash_manual(op)
-
-    async def _execute_trash_manual(self, op: FileOperation) -> None:
-        """Manual XDG trash implementation."""
-        import time
-        trash_dir = Path.home() / ".local" / "share" / "Trash"
-        files_dir = trash_dir / "files"
-        info_dir = trash_dir / "info"
-        files_dir.mkdir(parents=True, exist_ok=True)
-        info_dir.mkdir(parents=True, exist_ok=True)
-
+        """Move files to trash via the appropriate FSBackend."""
+        from ferrum.backends.router import get_backend_for_path, is_smb_path
         for i, src in enumerate(op.sources):
-            src_path = Path(src)
-            op.current_file = src_path.name
-            dst = self._unique_name(files_dir / src_path.name)
-            info_file = info_dir / f"{dst.name}.trashinfo"
-
-            info_content = (
-                f"[Trash Info]\n"
-                f"Path={src_path}\n"
-                f"DeletionDate={time.strftime('%Y-%m-%dT%H:%M:%S')}\n"
-            )
-            info_file.write_text(info_content)
-            shutil.move(str(src_path), str(dst))
-
+            op.current_file = Path(src).name if not is_smb_path(src) else src.rstrip("/").split("/")[-1]
+            backend = get_backend_for_path(src)
+            await backend.trash(src)
             op.completed_files = i + 1
             op.progress = op.completed_files / op.total_files
             if self.on_progress:
@@ -380,16 +345,21 @@ class OperationsManager:
             await asyncio.sleep(0)
 
     async def _execute_rename(self, op: FileOperation) -> None:
-        src = Path(op.sources[0])
-        dst = Path(op.destination)
-        src.rename(dst)
+        from ferrum.backends.router import get_backend_for_path
+        src = op.sources[0]
+        dst = op.destination
+        backend = get_backend_for_path(src)
+        await backend.rename(src, dst)
         op.completed_files = 1
         op.progress = 1.0
         if self.on_progress:
             await self.on_progress(op)
 
     async def _execute_mkdir(self, op: FileOperation) -> None:
-        Path(op.destination).mkdir(parents=True, exist_ok=True)
+        from ferrum.backends.router import get_backend_for_path
+        path = op.destination
+        backend = get_backend_for_path(path)
+        await backend.mkdir(path)
         op.completed_files = 1
         op.progress = 1.0
         if self.on_progress:

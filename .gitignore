@@ -1,0 +1,39 @@
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtualenvs
+.venv/
+venv/
+.env/
+
+# Build / packaging artifacts
+build/
+dist/
+deb_dist/
+*.whl
+*.tar.gz
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Local tooling
+*.log
+
+# Note: debian_deps/ vendors wheels for Debian packaging (build_deb.sh / postinst).
+# Left tracked intentionally; remove from VCS only after packaging no longer needs them.

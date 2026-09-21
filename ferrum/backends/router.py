@@ -20,7 +20,17 @@ def _decode_keyring_key(key: str) -> str:
 
 
 def _find_username_for_host(host: str) -> str | None:
-    """Find a stored username for a given host by reading keyring file."""
+    """Find a stored username for a given host.
+
+    Prefers configured SMB connections, then falls back to scanning the
+    plaintext keyring file (legacy / fallback storage only).
+    """
+    # Prefer usernames from configured connections for this host.
+    for conn in _config_connections:
+        if getattr(conn, "host", None) == host and getattr(conn, "username", None):
+            return conn.username
+
+    # Legacy plaintext keyring file discovery (only present when plaintext fallback is used).
     try:
         import configparser
         from pathlib import Path
@@ -32,12 +42,10 @@ def _find_username_for_host(host: str) -> str | None:
         config = configparser.ConfigParser()
         config.read(keyring_file)
 
-        # Find the encoded service name
         for section in config.sections():
             decoded_section = _decode_keyring_key(section)
             if decoded_section != KEYRING_SERVICE:
                 continue
-            # Found our service section — look for a key matching @host
             for encoded_key in config[section]:
                 decoded_key = _decode_keyring_key(encoded_key)
                 if decoded_key.endswith(f"@{host}"):

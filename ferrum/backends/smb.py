@@ -1,19 +1,83 @@
 import asyncio
-import keyring
-from keyrings.alt.file import PlaintextKeyring
-keyring.set_keyring(PlaintextKeyring())
+import logging
+import warnings
 from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Optional
 
+import keyring
 import smbclient
 import smbclient.shutil
 from smbprotocol.exceptions import SMBException, SMBConnectionClosed, SMBAuthenticationError
 
 from ferrum.backends.base import FSBackend, FileEntry
 
+logger = logging.getLogger(__name__)
 
 KEYRING_SERVICE = "ferrum-smb"
+
+# Prefer the system keyring (SecretService / libsecret / KWallet). Fall back to
+# plaintext keyrings.alt only when no system backend is available, with a warning.
+_using_plaintext_keyring = False
+
+
+def _configure_keyring() -> None:
+    """Prefer system keyring (SecretService / KWallet); plaintext only as fallback."""
+    global _using_plaintext_keyring
+    import importlib
+
+    # Actively prefer system backends over keyrings.alt plaintext (which may
+    # otherwise win on some installs when SecretService was never probed).
+    for module_name, class_name in (
+        ("keyring.backends.SecretService", "Keyring"),
+        ("keyring.backends.kwallet", "DBusKeyring"),
+    ):
+        try:
+            mod = importlib.import_module(module_name)
+            cls = getattr(mod, class_name)
+            candidate = cls()
+            # priority <= 0 means the backend is unavailable on this host
+            if getattr(candidate, "priority", 0) and candidate.priority > 0:
+                keyring.set_keyring(candidate)
+                logger.debug("Using system keyring: %s.%s", module_name, class_name)
+                return
+        except Exception:
+            continue
+
+    kr = keyring.get_keyring()
+    name = f"{type(kr).__module__}.{type(kr).__name__}"
+    cls_name = type(kr).__name__
+
+    if cls_name == "FailKeyring":
+        try:
+            from keyrings.alt.file import PlaintextKeyring
+            keyring.set_keyring(PlaintextKeyring())
+            _using_plaintext_keyring = True
+            warnings.warn(
+                "No system keyring available; falling back to plaintext keyring "
+                "for SMB credentials. Configure SecretService/libsecret for secure storage.",
+                UserWarning,
+                stacklevel=2,
+            )
+        except Exception as e:
+            logger.warning("Could not configure keyring backend: %s", e)
+        return
+
+    if cls_name == "PlaintextKeyring" or "keyrings.alt.file" in type(kr).__module__:
+        _using_plaintext_keyring = True
+        warnings.warn(
+            "Ferrum is using a plaintext keyring for SMB credentials. "
+            "Install/configure a system keyring (e.g. gnome-keyring / "
+            "libsecret) for secure storage.",
+            UserWarning,
+            stacklevel=2,
+        )
+        return
+
+    logger.debug("Using system keyring: %s", name)
+
+
+_configure_keyring()
 
 
 def smb_path(host: str, share: str, path: str = "") -> str:
@@ -243,6 +307,14 @@ class SMBBackend(FSBackend):
             self._ensure()
             smbclient.makedirs(self._unc(path), exist_ok=True)
         await asyncio.get_event_loop().run_in_executor(None, _mkdir)
+
+
+    async def trash(self, path: str) -> None:
+        """SMB shares have no XDG trash; refuse and ask caller to delete permanently."""
+        raise OSError(
+            f"Trash is not supported on SMB paths ({path}). "
+            "Use permanent delete instead."
+        )
 
     def get_parent(self, path: str) -> str:
         """Get parent of an SMB path."""

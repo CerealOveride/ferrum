@@ -76,3 +76,13 @@ class StatusMessage(Message):
     def __init__(self, text: str) -> None:
         super().__init__()
         self.text = text
+
+
+class SMBAuthRequired(Message):
+    """SMB credentials are required to access a share."""
+    def __init__(self, host: str, share: str, path: str) -> None:
+        super().__init__()
+        self.host = host
+        self.share = share
+        self.path = path
+

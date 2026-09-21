@@ -55,6 +55,11 @@ class FSBackend(ABC):
         pass
 
     @abstractmethod
+    async def trash(self, path: str) -> None:
+        """Move a file or directory to trash (backend-specific policy)."""
+        pass
+
+    @abstractmethod
     def get_parent(self, path: str) -> str:
         """Get the parent directory of a path."""
         pass
