@@ -18,7 +18,7 @@ A fast, stable, DE-agnostic TUI file manager built with Python and Textual.
 ## Installation
 
 ### From pip
-pip install ferrum
+pip install ferrum-fm
 
 ### On NixOS
 See ferrum.nix
