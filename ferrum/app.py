@@ -51,6 +51,7 @@ class FerrumApp(App):
         Binding("shift+delete", "delete_files", "Delete"),
         Binding("f2", "rename_file", "Rename"),
         Binding("f5", "mkdir", "New Dir"),
+        Binding("f8", "remove_smb_share", "Rm Share"),
     ]
 
     def __init__(self):
@@ -280,6 +281,20 @@ class FerrumApp(App):
             dst = str(src_path.parent / new_name)
             await self.ops.rename(src, dst)
             self._refresh_current()
+
+    
+    @work
+    async def action_remove_smb_share(self) -> None:
+        """Remove the highlighted Network SMB share (footer Rm Share)."""
+        sidebar = self.query_one(Sidebar)
+        node = sidebar.get_highlighted_smb_node()
+        if node is None:
+            self.notify(
+                "Highlight a Network share in the sidebar first",
+                severity="warning",
+            )
+            return
+        await sidebar._remove_smb_connection(node)
 
     @work
     async def action_mkdir(self) -> None:

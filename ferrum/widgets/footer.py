@@ -89,6 +89,7 @@ class FerrumFooter(Widget):
             ("^v", "Paste"),
             ("Del", "Trash"),
             ("F2", "Rename"),
+            ("F8", "Rm Share"),
             ("^f", "Search"),
         ]
         text = "  ".join(f"[bold cyan]{k}[/bold cyan] {v}" for k, v in bindings)

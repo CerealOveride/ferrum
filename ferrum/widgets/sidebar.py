@@ -150,6 +150,16 @@ class Sidebar(Widget):
         """Track the currently highlighted node for key handling."""
         self._highlighted_node = event.node
 
+    def get_highlighted_smb_node(self):
+        """Return the highlighted Network SMB share node, or None."""
+        node = self._highlighted_node
+        if node is None or node.data is None:
+            return None
+        data = node.data
+        if data.get("smb") and "smb_host" in data:
+            return node
+        return None
+
     def on_key(self, event) -> None:
         """Handle Delete key to remove a highlighted network share."""
         if event.key != "delete":
