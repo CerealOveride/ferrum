@@ -1,3 +1,0 @@
-include config/default.toml
-include ferrum.desktop
-include README.md
