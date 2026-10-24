@@ -9,9 +9,7 @@ python3Packages.buildPythonApplication rec {
     owner = "CerealOveride";
     repo = "ferrum";
     rev = "v${version}";
-    # TODO: fill in after tag v0.1.2 is published on GitHub (build once with
-    # lib.fakeHash and copy the "got:" hash, or use nix-prefetch-github).
-    hash = lib.fakeHash;
+    hash = "sha256-iezm0O9JN2B7JuMRFIkMjaB2nPyzibSZ7OJRuIHpWvI=";
   };
 
   build-system = with python3Packages; [

@@ -22,6 +22,6 @@ pkgbase = ferrum-fm
 	optdepends = noto-fonts-emoji: emoji glyphs in the TUI
 	provides = ferrum-fm
 	source = ferrum-0.1.2.tar.gz::https://github.com/CerealOveride/ferrum/archive/refs/tags/v0.1.2.tar.gz
-	sha256sums = TODO-fill-in-after-v0.1.2-tag-is-published
+	sha256sums = 4d24f8fafafe906a7aaa72e39a597cd7e0033602e2140743caffd0f92ed26e84
 
 pkgname = ferrum-fm

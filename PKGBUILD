@@ -33,10 +33,8 @@ makedepends=(
 provides=('ferrum-fm')
 conflicts=()
 source=("$_pkgname-$pkgver.tar.gz::https://github.com/CerealOveride/ferrum/archive/refs/tags/v$pkgver.tar.gz")
-# TODO: replace with the real checksum once tag v0.1.2 is published on GitHub:
-#   curl -sL https://github.com/CerealOveride/ferrum/archive/refs/tags/v0.1.2.tar.gz | sha256sum
-#   (or run `updpkgsums`), then regenerate .SRCINFO with `makepkg --printsrcinfo > .SRCINFO`.
-sha256sums=('TODO-fill-in-after-v0.1.2-tag-is-published')
+# sha256 of GitHub's v0.1.2 tag tarball (verified 2026-10-23).
+sha256sums=('4d24f8fafafe906a7aaa72e39a597cd7e0033602e2140743caffd0f92ed26e84')
 
 build() {
   cd "$_pkgname-$pkgver"
