@@ -8,7 +8,13 @@ from typing import Optional
 import keyring
 import smbclient
 import smbclient.shutil
-from smbprotocol.exceptions import SMBException, SMBConnectionClosed, SMBAuthenticationError
+from smbprotocol.exceptions import (
+    AccessDenied,
+    LogonFailure,
+    SMBAuthenticationError,
+    SMBConnectionClosed,
+    SMBException,
+)
 
 from ferrum.backends.base import FSBackend, FileEntry
 
@@ -144,11 +150,15 @@ class SMBConnection:
 
     @property
     def password(self) -> str:
+        # A password typed into the credential dialog must win over a (possibly
+        # stale/wrong) keyring entry; the keyring is only the fallback.
+        if self._password:
+            return self._password
         if self.use_keyring and self.username:
             stored = get_credentials(self.host, self.username)
             if stored:
                 return stored
-        return self._password
+        return ""
 
     def connect(self) -> None:
         """Register connection with smbclient."""
@@ -172,8 +182,12 @@ class SMBConnection:
             kwargs["auth_protocol"] = "ntlm"
             smbclient.register_session(self.host, **kwargs)
             self._connected = True
-        except SMBAuthenticationError as e:
-            raise PermissionError(f"SMB auth failed for {self.host}: {e}")
+        except (SMBAuthenticationError, LogonFailure, AccessDenied) as e:
+            # LogonFailure (STATUS_LOGON_FAILURE) is what Samba returns for a bad
+            # user/password; it is NOT a subclass of SMBAuthenticationError, so
+            # without this it became a ConnectionError and the dialog never re-opened.
+            logger.info("SMB auth rejected for %s as %r: %s", self.host, self.username, e)
+            raise PermissionError(f"SMB auth failed for {self.host}: {e}") from e
         except SMBException as e:
             # When a guest session is established but the server requires signing/encryption,
             # smbprotocol raises a plain SMBException (not SMBAuthenticationError).

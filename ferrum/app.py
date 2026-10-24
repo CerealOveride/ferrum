@@ -160,11 +160,23 @@ class FerrumApp(App):
 
         # Update _config_connections so the next get_backend_for_path call uses
         # the new username as the keyring key (the old username would miss the lookup).
+        # If the share isn't in the cache (added this session / typed path), add it,
+        # and persist the username so it survives a restart.
         from ferrum.backends.router import _config_connections
+        from ferrum.config import save_smb_connection, SMBConnection as ConfigSMBConn
         for conn in _config_connections:
             if conn.host == event.host and conn.share == event.share:
                 conn.username = result["username"]
                 break
+        else:
+            conn = ConfigSMBConn(
+                name=f"{event.host}/{event.share}",
+                host=event.host,
+                share=event.share,
+                username=result["username"],
+            )
+            _config_connections.append(conn)
+        save_smb_connection(conn)
 
         if pane:
             pane.load_directory(event.path)

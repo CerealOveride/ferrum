@@ -271,7 +271,7 @@ class SMBConnectionDialog(ModalScreen):
             host = self.query_one("#input-host", Input).value.strip()
             share = self.query_one("#input-share", Input).value.strip()
             username = self.query_one("#input-username", Input).value.strip()
-            password = self.query_one("#input-password", Input).value.strip()
+            password = self.query_one("#input-password", Input).value  # never strip passwords
 
             if not host or not share:
                 return

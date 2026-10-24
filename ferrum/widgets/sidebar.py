@@ -220,6 +220,17 @@ class Sidebar(Widget):
             )
             save_smb_connection(config_conn)
 
+            # Also register it with the router's in-memory cache, otherwise
+            # get_backend_for_path() can't find the username for this share until
+            # Ferrum is restarted and connects as guest (credential-prompt loop).
+            from ferrum.backends.router import _config_connections
+            for i, c in enumerate(_config_connections):
+                if c.host == config_conn.host and c.share == config_conn.share:
+                    _config_connections[i] = config_conn
+                    break
+            else:
+                _config_connections.append(config_conn)
+
             # Add to sidebar tree
             tree = self.query_one(Tree)
             network_node = None
