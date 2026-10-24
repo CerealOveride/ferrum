@@ -4,13 +4,14 @@ set -e
 WHEELS_DIR="/usr/share/ferrum/wheels"
 
 if [ -d "$WHEELS_DIR" ]; then
+    # Vendor deps Debian can't provide at needed versions (textual>=5, smbprotocol).
+    # --break-system-packages is required on newer Debian; ignore failures if already present.
     pip3 install \
         --no-index \
         --find-links="$WHEELS_DIR" \
         --quiet \
         --break-system-packages \
-        smbprotocol pyspnego textual aiofiles send2trash \
-        keyring keyrings.alt rich cryptography \
+        textual smbprotocol pyspnego cryptography \
         2>/dev/null || true
 fi
 

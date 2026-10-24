@@ -1,7 +1,7 @@
 pkgbase = ferrum-fm
 	pkgdesc = DE-agnostic TUI file manager with SMB shares (command: fe)
-	pkgver = 0.1.1
-	pkgrel = 2
+	pkgver = 0.1.2
+	pkgrel = 1
 	url = https://github.com/CerealOveride/ferrum
 	arch = any
 	license = MIT
@@ -9,7 +9,6 @@ pkgbase = ferrum-fm
 	makedepends = python-installer
 	makedepends = python-wheel
 	makedepends = python-hatchling
-	makedepends = python-setuptools
 	depends = python
 	depends = python-textual
 	depends = python-aiofiles
@@ -22,7 +21,7 @@ pkgbase = ferrum-fm
 	depends = xdg-utils
 	optdepends = noto-fonts-emoji: emoji glyphs in the TUI
 	provides = ferrum-fm
-	source = ferrum-0.1.1.tar.gz::https://github.com/CerealOveride/ferrum/archive/refs/tags/v0.1.1.tar.gz
-	sha256sums = 832fd857e3c6bad2b1c8c1faea8c75c05dcb29b7bccebbdc07ee7b13efa77c6a
+	source = ferrum-0.1.2.tar.gz::https://github.com/CerealOveride/ferrum/archive/refs/tags/v0.1.2.tar.gz
+	sha256sums = TODO-fill-in-after-v0.1.2-tag-is-published
 
 pkgname = ferrum-fm

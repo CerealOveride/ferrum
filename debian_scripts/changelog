@@ -1,0 +1,17 @@
+ferrum (0.1.2-1) trixie; urgency=medium
+
+  * SMB: fix credential prompt loop for shares added in the current session.
+  * SMB: persist the username entered in the credential dialog.
+  * SMB: treat STATUS_LOGON_FAILURE / ACCESS_DENIED as auth failures so the
+    credential dialog re-opens instead of a generic connection error.
+  * SMB: prefer the typed password over a stale keyring entry; never strip
+    passwords.
+  * Packaging: build the .deb directly from the hatchling wheel; clean dist/.
+
+ -- CerealOveride <150073255+CerealOveride@users.noreply.github.com>  Fri, 23 Oct 2026 22:00:00 -0700
+
+ferrum (0.1.1-1) trixie; urgency=medium
+
+  * Rename PyPI distribution to ferrum-fm.
+
+ -- CerealOveride <150073255+CerealOveride@users.noreply.github.com>  Mon, 21 Sep 2026 22:45:00 -0700

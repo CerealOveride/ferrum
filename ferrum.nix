@@ -1,24 +1,24 @@
 { lib, python3Packages, fetchFromGitHub }:
 
-python3Packages.buildPythonApplication {
+python3Packages.buildPythonApplication rec {
   pname = "ferrum";
-  version = "0.1.0";
+  version = "0.1.2";
+  pyproject = true;
 
   src = fetchFromGitHub {
     owner = "CerealOveride";
     repo = "ferrum";
-    rev = "ac5149d3e90d5ae8f71af9af177e038cf0501ffc";
-    sha256 = "1pz0ypjzxq1h3q0z306iv7mc6xvrv72jafxdkr3a0brw1hyhscrq";
+    rev = "v${version}";
+    # TODO: fill in after tag v0.1.2 is published on GitHub (build once with
+    # lib.fakeHash and copy the "got:" hash, or use nix-prefetch-github).
+    hash = lib.fakeHash;
   };
 
-  format = "pyproject";
-
-  nativeBuildInputs = with python3Packages; [
+  build-system = with python3Packages; [
     hatchling
-    setuptools
   ];
 
-  propagatedBuildInputs = with python3Packages; [
+  dependencies = with python3Packages; [
     textual
     aiofiles
     smbprotocol
@@ -26,7 +26,13 @@ python3Packages.buildPythonApplication {
     keyring
     keyrings-alt
     rich
+    jeepney
   ];
+
+  # Don't pick up stale wheels if any are ever present in the source tree.
+  preBuild = ''
+    rm -rf dist build
+  '';
 
   postInstall = ''
     install -Dm644 ferrum.desktop $out/share/applications/ferrum.desktop
